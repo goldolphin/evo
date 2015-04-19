@@ -53,8 +53,6 @@ void print(int * data, int len) {
 }
 
 void test(int * data, int len) {
-    print(data, len);
-
     int start = rand()% 5;
     range(data, start, start+len);
     print(data, len);
