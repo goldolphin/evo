@@ -1,0 +1,103 @@
+​​/**
+ * 
+ * @author goldolphin
+ *         2015-04-19 10:44
+ */
+
+import IO
+import Random
+
+data List = struct()
+data Cons = struct(value: Int, tail: List) extends List 
+let nil: List = List() 
+
+let print = fun(l: List): Unit (
+    printf("list(“)
+    let loop = fun(head: List): Unit (
+        if(head != nil, (
+            if(head != l, printf(“, “))
+            printf(“%d”, head.value)
+            loop(head.tail))
+        )
+    )
+    loop(l)
+    printfn(“)”)
+)
+
+let cons = fun(value: Int, tail: List): List (
+    Cons(value, tail)
+)
+
+let reverse = fun(l: List): List {
+    if (l == nil || l.tail == nil,
+        l, (
+        let loop = fun(l: List, r: List): List (
+            if (l == nil,
+                r,
+                loop(l.tail, cons(l.value, r))
+            )
+        )
+        loop(l, nil))
+    )
+)
+
+let append = fun(left: List, right: List): List (
+    if(left == nil,
+        right,
+        if(right == nil,
+            left,
+            cons(left.value, append(left.tail, right))
+        )
+    )
+)
+
+let sort = fun(l: List): List (
+    if (l == nil || l.tail == nil,
+        l, (
+        let pivot = l.value
+        let sort0 = fun(head: List, less: List, greater: List): List (
+            if(head == nil,
+                append(sort(less), cons(pivot, sort(greater))),
+                if(head.value < pivot,
+                    sort0(head.tail, cons(head.value, less), greater),
+                    sort0(head.tail, less, cons(head.value, greater))
+                )
+            )
+        )
+        sort0(head.tail, nil, nil))
+    )
+)
+
+let range = fun(start: Int, end: Int): List (
+    if(start >= end,
+        nil,
+        cons(start, range(start+1, end))
+    )
+}
+
+let test = fun(len: Int): Unit (
+    let start = rand() % 5
+    let l = range(start, start+len)
+    print(l)
+
+    let r = reverse(l)
+    print(r)
+
+    let s = sort(r)
+    print(s)
+)
+
+let main = fun(): Unit (
+    let n = 10
+
+    let loop = fun(i: Int): Unit (
+        if (i < n, (
+            test(20)
+            printf("\n"))
+            loop(i + 1)
+        )
+    )
+    loop(0)
+
+    0
+)
