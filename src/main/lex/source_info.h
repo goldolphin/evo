@@ -11,6 +11,6 @@ typedef struct {
 } source_info_t;
 
 
-source_info_t * make_source_info(char * name);
+void source_info_set(source_info_t * info, char * name);
 
 #endif //EVO_SOURCE_INFO_H

@@ -8,13 +8,11 @@
 
 token_info_t token_end;
 
-token_t * make_token(token_type type, char_t * value) {
-    token_t * t = new_data(token_t);
-    t->type = type;
-    t->value = value;
-    return t;
+void token_init(token_t * token, token_type type, char_t * value) {
+    token->type = type;
+    token->value = value;
 }
 
-token_t * predefine_token(char_t * value) {
-    return make_token(PREDEFINED, value);
+void token_init_predefined(token_t * token, char_t * value) {
+    return token_init(token, PREDEFINED, value);
 }
