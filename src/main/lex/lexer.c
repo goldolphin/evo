@@ -8,12 +8,19 @@
 #include "token.h"
 #include "char_stream.h"
 
-#define CHAR_COUNT 256
-
 #define META_NULL ((char_t)255)
 #define REJECT -1
 
 #define MAX_TOKEN_LEN 1024
+
+typedef struct {
+    char_t buffer[MAX_TOKEN_LEN];
+    int length;
+} buffer_t;
+
+token_info_t * poll_string(stream_t * stream, buffer_t * buffer) {
+
+}
 
 typedef struct state_s {
     struct state_s ** nexts;
@@ -42,7 +49,7 @@ typedef struct {
     stream_t * stream;
     state_t * current;
     char_t buffer[MAX_TOKEN_LEN];
-    int buffer_pos;
+    int buffer_len;
 } tokenizer_t;
 
 lexer_t * make_lexer(token_t * predefined, int predefined_len) {

@@ -14,9 +14,7 @@ typedef int error_t;
 
 typedef unsigned char char_t;
 #define CHAR_END ((char_t)0)
+#define CHAR_COUNT 256
 
-static inline bool is_identifier(char_t c) {
-
-}
 
 #endif //EVO_CHARACTER_H

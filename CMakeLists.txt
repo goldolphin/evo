@@ -5,6 +5,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -std=c99 -Wall -Werror")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Werror")
 
 set(SOURCE_FILES
+    src/main/common/bitmap.h
+    src/main/common/bitmap.c
     src/main/lex/char_stream.c
     src/main/lex/char_stream.h
     src/main/lex/character.c
@@ -20,7 +22,7 @@ set(SOURCE_FILES
     src/main/memory/memory.c
     src/main/memory/memory.h)
 
-add_executable(evo ${SOURCE_FILES})
+add_executable(evo ${SOURCE_FILES} src/main/common/heap.h src/main/common/heap.c)
 
 enable_testing()
 
