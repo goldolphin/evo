@@ -31,11 +31,16 @@ set(SOURCE_FILES
 
 add_executable(evo ${SOURCE_FILES} src/main/main.c)
 
+add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c)
+
 enable_testing()
 
 add_executable(array src/test/c/array.c)
 add_executable(list src/test/c/list.c)
 
+add_executable(test-matcher src/test/utils/test_matcher.c)
+target_link_libraries(test-matcher utils)
+
 add_test(NAME array COMMAND array)
 add_test(NAME list COMMAND list)
-
+add_test(NAME test-matcher COMMAND test-matcher)
