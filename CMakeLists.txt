@@ -7,27 +7,25 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Werror")
 include_directories(src/main)
 
 set(SOURCE_FILES
-    src/main/common/bitmap.h
-    src/main/common/bitmap.c
-    src/main/lex/character.c
-    src/main/lex/character.h
-    src/main/lex/lexer.c
-    src/main/lex/lexer.h
-    src/main/lex/operators.h
-    src/main/lex/source_info.c
-    src/main/lex/source_info.h
-    src/main/lex/token.c
-    src/main/lex/token.h
-    src/main/common/heap.h
-    src/main/common/heap.c
-    src/main/lex/char_reader.h
-    src/main/lex/char_reader.c
-    src/main/lex/matcher.h
-    src/main/lex/matcher.c
-    src/main/common/heap.h
-    src/main/common/heap.c
-    src/main/memory/memory.c
-    src/main/memory/memory.h)
+    src/main/legacy/common/bitmap.h
+    src/main/legacy/common/bitmap.c
+    src/main/legacy/lex/character.c
+    src/main/legacy/lex/character.h
+    src/main/legacy/lex/lexer.c
+    src/main/legacy/lex/lexer.h
+    src/main/legacy/lex/operators.h
+    src/main/legacy/lex/source_info.c
+    src/main/legacy/lex/source_info.h
+    src/main/legacy/lex/token.c
+    src/main/legacy/lex/token.h
+    src/main/legacy/common/heap.h
+    src/main/legacy/common/heap.c
+    src/main/legacy/lex/char_reader.h
+    src/main/legacy/lex/char_reader.c
+    src/main/legacy/lex/matcher.h
+    src/main/legacy/lex/matcher.c
+    src/main/legacy/common/heap.h
+    src/main/legacy/common/heap.c)
 
 add_executable(evo ${SOURCE_FILES} src/main/main.c)
 

@@ -3,7 +3,6 @@
  *         2015-08-18 17:32:32.
  */
 #include <utils/matcher.h>
-#include <assert.h>
 #include <stdio.h>
 
 int main() {
@@ -55,9 +54,9 @@ int main() {
 
     for (int i = 0; i < keyword_num; ++i) {
         matcher_pattern_t *pattern = matcher_match_seq(&matcher, (uint8_t *) keywords[i], (int) strlen(keywords[i]));
-        assert(pattern != NULL);
-        assert(pattern->value == (uint8_t *)keywords[i]);
-        assert(ptr2int(pattern->extra, int) == i);
+        ensure(pattern != NULL);
+        ensure(pattern->value == (uint8_t *)keywords[i]);
+        ensure(ptr2int(pattern->extra, int) == i);
         printf("pattern[%d]=%s\n", ptr2int(pattern->extra, int), pattern->value);
     }
 
@@ -71,7 +70,7 @@ int main() {
 
     for (int i = 0; i < input_num; ++i) {
         matcher_pattern_t *pattern = matcher_match_seq(&matcher, (uint8_t *) inputs[i], (int) strlen(inputs[i]));
-        assert(pattern == NULL);
+        ensure(pattern == NULL);
     }
 
     return 0;

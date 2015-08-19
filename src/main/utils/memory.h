@@ -13,7 +13,8 @@
 /**
  * Utils.
  */
-#define ensure(expr) do {if(!(expr)) abort();} while(0)
+
+#define ensure(expr) do {if(!(expr)) *(char *)0=0;} while(0)
 
 #define new_data(type) ((type *) malloc(sizeof(type)))
 
