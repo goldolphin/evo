@@ -7,21 +7,21 @@
 import IO
 import Random
 
-data List = struct()
-data Cons = struct(value: Int, tail: List) extends List 
+struct List()
+struct Cons(value: Int, tail: List) extends List
 let nil: List = List() 
 
 let print = fun(l: List): Unit (
-    printf("list(“)
+    printf("list(")
     let loop = fun(head: List): Unit (
         if(head != nil, (
-            if(head != l, printf(“, “))
-            printf(“%d”, head.value)
+            if(head != l, printf(", "))
+            printf("%d", head.value)
             loop(head.tail))
         )
     )
     loop(l)
-    printfn(“)”)
+    printfn(")")
 )
 
 let cons = fun(value: Int, tail: List): List (
