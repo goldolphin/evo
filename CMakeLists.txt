@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Werror")
 
 include_directories(src/main)
 
-add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c)
+add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c)
 
 add_library(lex STATIC src/main/lex/character.h src/main/lex/character.c src/main/lex/lexer.h src/main/lex/lexer.c)
 target_link_libraries(lex utils)

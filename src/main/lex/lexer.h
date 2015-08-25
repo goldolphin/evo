@@ -14,10 +14,4 @@ typedef struct {
     matcher_t keyword_matcher;
 } lexer_t;
 
-typedef struct {
-    matcher_context_t keyword_context;
-    uint8_t buffer[MAX_TOKEN_LEN];
-    int buffer_len;
-} lexer_context_t;
-
 #endif //EVO_LEXER_H
