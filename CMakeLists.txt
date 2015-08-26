@@ -8,8 +8,8 @@ include_directories(src/main)
 
 add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c)
 
-add_library(lex STATIC src/main/lex/character.h src/main/lex/character.c src/main/lex/lexer.h src/main/lex/lexer.c)
-target_link_libraries(lex utils)
+add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c)
+target_link_libraries(lexer utils)
 
 add_executable(array src/test/c/array.c)
 add_executable(list src/test/c/list.c)
@@ -17,8 +17,8 @@ add_executable(list src/test/c/list.c)
 add_executable(test-matcher src/test/utils/test_matcher.c)
 target_link_libraries(test-matcher utils)
 
-add_executable(test-lexer src/test/lex/test_lexer.c)
-target_link_libraries(test-lexer lex)
+add_executable(test-lexer src/test/lexer/test_lexer.c)
+target_link_libraries(test-lexer lexer)
 configure_file(src/test/evo/list.evo src/test/evo/list.evo)
 
 enable_testing()

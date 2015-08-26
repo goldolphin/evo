@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <utils/memory.h>
-#include <lex/lexer.h>
+#include <lexer/lexer.h>
 
 /**
  * @author caofuxiang
