@@ -16,7 +16,7 @@ static inline bool is_digit(uint8_t c) {
 }
 
 static inline bool is_visible(uint8_t c) {
-    return c >= 33 && c != 127;
+    return c >= 32 && c != 127;
 }
 
 static inline bool is_linebreak(uint8_t c) {

@@ -46,11 +46,11 @@ static inline void buffer_add(buffer_t * buffer, uint8_t c) {
 
 void lexer_init(lexer_t * lexer) {
     int keyword_num = array_size(keywords);
-    matcher_pattern_t patterns[keyword_num];
+    lexer->keywords = new_array(matcher_pattern_t, keyword_num);
     for (int i = 0; i < keyword_num; ++i) {
-        matcher_pattern_init(&patterns[i], (uint8_t *) keywords[i], (int) strlen(keywords[i]), int2ptr(i, void));
+        matcher_pattern_init(&lexer->keywords[i], (uint8_t *) keywords[i], (int) strlen(keywords[i]), int2ptr(i, void));
     }
-    matcher_init(&lexer->keyword_matcher, patterns, keyword_num);
+    matcher_init(&lexer->keyword_matcher, lexer->keywords, keyword_num);
 }
 
 void lexer_destroy(lexer_t * lexer) {
@@ -60,7 +60,7 @@ void lexer_destroy(lexer_t * lexer) {
 static inline void print_token(const char * type, uint8_t * value, int len) {
     SBUILDER(builder, 1024);
     sbuilder_nstr(&builder, (const char *) value, len);
-    printf("type=%s, value=%s\n", type, builder.buf);
+    printf("type=%s, value=`%s`\n", type, builder.buf);
 }
 
 static inline void print_error(const char * msg, uint8_t * str, int len, int pos) {
@@ -95,6 +95,29 @@ static inline int parse_float(uint8_t * str, int len, buffer_t * buf) {
     return r;
 }
 
+static inline int parse_string(uint8_t * str, int len, buffer_t * buf) {
+    if (len < 2) return 0;
+    buffer_add(buf, str[0]);
+    int r = 1;
+    while (r < len) {
+        uint8_t c = str[r];
+        buffer_add(buf, c);
+        if (c == '"') {
+            return r+1;
+        }
+        if (c == '\\') {
+            ++ r;
+            if (r < len) {
+                buffer_add(buf, str[r]);
+            } else {
+                return 0;
+            }
+        }
+        ++ r;
+    }
+    return 0;
+}
+
 bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
     matcher_context_t ctx;
     buffer_t buf;
@@ -102,6 +125,11 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
     buffer_reset(&buf);
     for (int i = 0; i < len; ) {
         uint8_t c = str[i];
+        if (!is_visible(c)) {
+            ++i;
+            continue;
+        }
+
         // Parse comments
         if (c == '/') {
             if (str[i+1] == '/') {
@@ -111,36 +139,19 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
                 }
                 continue;
             }
-            if (str[i+1] == '*') {
-                i += 2;
-                while (true) {
-                    if (i < len-1) {
-                        if (str[i] == '*' && str[i+1] == '/') {
-                            i += 2;
-                            break;
-                        } else {
-                            i += 2;
-                        }
-                    } else {
-                        print_error("Unmatched block comments", str, len, i);
-                        return false;
-                    }
-                }
+        }
+
+
+        // Parse string literals.
+        if (c == '"') {
+            int l = parse_string(str+i, len-i, &buf);
+            if (l > 0) {
+                print_token("STR", buf.buffer, buf.length);
+                buffer_reset(&buf);
+                i += l;
                 continue;
             }
         }
-
-        // Parse delimiters
-        if (is_delimiter(c)) {
-            buffer_add(&buf, c);
-            print_token("DELIMITER", buf.buffer, buf.length);
-            buffer_reset(&buf);
-            ++ i;
-            continue;
-        }
-
-        // Parse string literals.
-
 
         // Parse number literals.
         if (is_digit(c)) {
@@ -154,10 +165,6 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
         }
 
         // Parse keywords
-        if (!is_identifier_letter(c)) {
-            print_error("Invalid identifier letter", str, len, i);
-            return false;
-        }
         if (matcher_match(&lexer->keyword_matcher, &ctx, c)) {
             buffer_add(&buf, c);
             ++i;
@@ -180,8 +187,19 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
             buffer_add(&buf, str[i]);
             ++i;
         }
-        print_token("ID", buf.buffer, buf.length);
-        buffer_reset(&buf);
+        if (buf.length > 0) {
+            print_token("ID", buf.buffer, buf.length);
+            buffer_reset(&buf);
+        }
+
+        // Parse delimiters
+        c = str[i];
+        if (is_punctuation(c)) {
+            buffer_add(&buf, c);
+            print_token("PUNC", buf.buffer, buf.length);
+            buffer_reset(&buf);
+        }
+        ++ i;
     }
     return true;
 }

@@ -34,7 +34,7 @@ bool sbuilder_nstr(sbuilder_t * builder, const char * s, int n) {
         return false;
     }
     for (int i = 0; i < n && s[i] != '\0' ; ++i) {
-        builder->buf[builder->len++] = s[n];
+        builder->buf[builder->len++] = s[i];
     }
     builder->buf[builder->len] = '\0';
     return true;
