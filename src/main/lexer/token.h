@@ -7,6 +7,7 @@
 #define EVO_TOKEN_H
 
 #include <stdint.h>
+#include <utils/sbuilder.h>
 
 typedef enum {
     TOKEN_ID,
@@ -43,5 +44,7 @@ typedef struct {
 } token_t;
 
 void token_init(token_t * token, token_type_t type, uint8_t *value, int value_len);
+
+bool sbuilder_token(sbuilder_t * builder, token_t * token);
 
 #endif //EVO_TOKEN_H

@@ -8,13 +8,19 @@
 #include <utils/sbuilder.h>
 #include "lexer.h"
 #include "character.h"
+#include "token.h"
 
-static char * keywords[] = {
-        "import",
-        "let",
-        "struct",
-        "extends",
-        "fun",
+typedef struct {
+    token_type_t type;
+    char * value;
+} token_define_t;
+
+static token_define_t keywords[] = {
+        {TOKEN_IMPORT, "import"},
+        {TOKEN_LET, "let"},
+        {TOKEN_STRUCT, "struct"},
+        {TOKEN_EXTENDS, "extends"},
+        {TOKEN_FUN, "fun"},
 /*
         "'",
         "\"",
@@ -30,6 +36,20 @@ static char * keywords[] = {
         "{",
         "}",
         */
+};
+
+static token_define_t punctuations[] = {
+        {TOKEN_LPAREN, "("},
+        {TOKEN_RPAREN, ")"},
+        {TOKEN_COMMA, ","},
+        {TOKEN_PERIOD, "."},
+        {TOKEN_COLON, ":"},
+        {TOKEN_SEMICOLON, ";"},
+        {TOKEN_LBRACKET, "["},
+        {TOKEN_RBRACKET, "]"},
+        {TOKEN_LBRACE, "{"},
+        {TOKEN_RBRACE, "}"},
+        {TOKEN_GRAVE, "`"},
 };
 
 typedef struct {
@@ -49,19 +69,37 @@ void lexer_init(lexer_t * lexer) {
     int keyword_num = array_size(keywords);
     lexer->keywords = new_array(matcher_pattern_t, keyword_num);
     for (int i = 0; i < keyword_num; ++i) {
-        matcher_pattern_init(&lexer->keywords[i], (uint8_t *) keywords[i], (int) strlen(keywords[i]), int2ptr(i, void));
+        token_t * token = new_data(token_t);
+        token_init(token, keywords[i].type, (uint8_t *) keywords[i].value, (int) strlen(keywords[i].value));
+        matcher_pattern_init(&lexer->keywords[i], token->value, token->value_len, token);
     }
     matcher_init(&lexer->keyword_matcher, lexer->keywords, keyword_num);
+
+    int punctuation_num = array_size(punctuations);
+    lexer->punctuations = new_array(token_t, punctuation_num);
+    for (int i = 0; i < punctuation_num; ++i) {
+        token_init(&lexer->punctuations[i], punctuations[i].type, (uint8_t *)punctuations[i].value, (int)strlen(punctuations[i].value));
+    }
 }
 
 void lexer_destroy(lexer_t * lexer) {
+    int keyword_num = array_size(keywords);
+    for (int i = 0; i < keyword_num; ++i) {
+        free(lexer->keywords[i].extra);
+    }
     matcher_destroy(&lexer->keyword_matcher);
+    free(lexer->keywords);
+    free(lexer->punctuations);
 }
 
-static inline void print_token(const char * type, uint8_t * value, int len) {
-    SBUILDER(builder, 1024);
-    sbuilder_nstr(&builder, (const char *) value, len);
-    printf("type=%s, value=`%s`\n", type, builder.buf);
+static inline token_t * parse_punctuation(lexer_t * lexer, uint8_t c) {
+    int punctuation_num = array_size(punctuations);
+    for (int i = 0; i < punctuation_num; ++i) {
+        if (lexer->punctuations[i].value[0] == c) {
+            return &lexer->punctuations[i];
+        }
+    }
+    return NULL;
 }
 
 static inline void print_error(const char * msg, uint8_t * str, int len, int pos) {
@@ -119,18 +157,19 @@ static inline int parse_string(uint8_t * str, int len, buffer_t * buf) {
     return 0;
 }
 
-bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
+static inline token_t * new_token(token_type_t type, uint8_t *value, int value_len) {
+    token_t * token = new_data(token_t);
+    token_init(token, type, value, value_len);
+    return token;
+}
+
+bool lexer_match(lexer_t * lexer, uint8_t * str, int len, lexer_callback_t callback, void * extra) {
     matcher_context_t ctx;
     buffer_t buf;
     matcher_reset_context(&lexer->keyword_matcher, &ctx);
     buffer_reset(&buf);
     for (int i = 0; i < len; ) {
         uint8_t c = str[i];
-        if (!is_visible(c)) {
-            ++i;
-            continue;
-        }
-
         // Parse comments
         if (c == '/') {
             if (str[i+1] == '/') {
@@ -146,7 +185,7 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
         if (c == '"') {
             int l = parse_string(str+i, len-i, &buf);
             if (l > 0) {
-                print_token("STR", buf.buffer, buf.length);
+                callback(new_token(TOKEN_STRING, buf.buffer, buf.length), extra);
                 buffer_reset(&buf);
                 i += l;
                 continue;
@@ -157,7 +196,7 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
         if (is_digit(c)) {
             int l = parse_float(str+i, len-i, &buf);
             if (l > 0) {
-                print_token("NUM", buf.buffer, buf.length);
+                callback(new_token(TOKEN_NUMBER, buf.buffer, buf.length), extra);
                 buffer_reset(&buf);
                 i += l;
                 continue;
@@ -165,20 +204,20 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
         }
 
         if (!is_identifier_letter(c)) {
-            // Parse punctuations
-            if (is_punctuation(c)) {
-                print_token("PUNC", &c, 1);
-                buffer_reset(&buf);
-            }
             matcher_pattern_t * pattern = matcher_context_pattern(&ctx);
             if (pattern != NULL) {
-                print_token("KEYWORD", pattern->value, pattern->value_len);
+                callback(pattern->extra, extra);
                 matcher_reset_context(&lexer->keyword_matcher, &ctx);
                 buffer_reset(&buf);
             } else if (buf.length > 0) {
-                print_token("ID", buf.buffer, buf.length);
+                callback(new_token(TOKEN_ID, buf.buffer, buf.length), extra);
                 matcher_reset_context(&lexer->keyword_matcher, &ctx);
                 buffer_reset(&buf);
+            }
+            // Parse punctuations
+            token_t * token = parse_punctuation(lexer, c);
+            if (token != NULL) {
+                callback(token, extra);
             }
             ++ i;
             continue;
