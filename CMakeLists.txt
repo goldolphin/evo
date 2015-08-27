@@ -8,7 +8,7 @@ include_directories(src/main)
 
 add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c)
 
-add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c)
+add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c src/main/lexer/token.c src/main/lexer/token.h)
 target_link_libraries(lexer utils)
 
 add_executable(array src/test/c/array.c)

@@ -9,9 +9,14 @@
  * @author caofuxiang
  *         2015-08-26 09:29:29.
  */
+
+bool match(lexer_t* lexer, const char * line) {
+    return lexer_match(lexer, (uint8_t *) line, (int) strlen(line));
+}
+
 int main() {
-    FILE * f = fopen("src/test/evo/list.evo", "r");
     int buf_len = 1024;
+    FILE * f = fopen("src/test/evo/list.evo", "r");
     char *buf = new_array(char, buf_len);
     lexer_t lexer;
     lexer_init(&lexer);

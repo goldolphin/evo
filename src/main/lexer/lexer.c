@@ -10,10 +10,11 @@
 #include "character.h"
 
 static char * keywords[] = {
-        "let",
         "import",
+        "let",
         "struct",
         "extends",
+        "fun",
 /*
         "'",
         "\"",
@@ -141,7 +142,6 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
             }
         }
 
-
         // Parse string literals.
         if (c == '"') {
             int l = parse_string(str+i, len-i, &buf);
@@ -164,42 +164,39 @@ bool lexer_match(lexer_t * lexer, uint8_t * str, int len) {
             }
         }
 
+        if (!is_identifier_letter(c)) {
+            // Parse punctuations
+            if (is_punctuation(c)) {
+                print_token("PUNC", &c, 1);
+                buffer_reset(&buf);
+            }
+            matcher_pattern_t * pattern = matcher_context_pattern(&ctx);
+            if (pattern != NULL) {
+                print_token("KEYWORD", pattern->value, pattern->value_len);
+                matcher_reset_context(&lexer->keyword_matcher, &ctx);
+                buffer_reset(&buf);
+            } else if (buf.length > 0) {
+                print_token("ID", buf.buffer, buf.length);
+                matcher_reset_context(&lexer->keyword_matcher, &ctx);
+                buffer_reset(&buf);
+            }
+            ++ i;
+            continue;
+        }
+
         // Parse keywords
         if (matcher_match(&lexer->keyword_matcher, &ctx, c)) {
             buffer_add(&buf, c);
             ++i;
             continue;
         }
-        matcher_pattern_t * pattern = matcher_context_pattern(&ctx);
-        if (pattern != NULL) {
-            if (!is_identifier_letter(c)) {
-                print_token("KEYWORD", pattern->value, pattern->value_len);
-                matcher_reset_context(&lexer->keyword_matcher, &ctx);
-                buffer_reset(&buf);
-                continue;
-            } else {
-                matcher_reset_context(&lexer->keyword_matcher, &ctx);
-            }
-        }
+        matcher_reset_context(&lexer->keyword_matcher, &ctx);
 
         // Parse IDs.
         while (i < len && is_identifier_letter(str[i])) {
             buffer_add(&buf, str[i]);
             ++i;
         }
-        if (buf.length > 0) {
-            print_token("ID", buf.buffer, buf.length);
-            buffer_reset(&buf);
-        }
-
-        // Parse delimiters
-        c = str[i];
-        if (is_punctuation(c)) {
-            buffer_add(&buf, c);
-            print_token("PUNC", buf.buffer, buf.length);
-            buffer_reset(&buf);
-        }
-        ++ i;
     }
     return true;
 }
