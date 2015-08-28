@@ -1,5 +1,5 @@
 /**
- * @author caofuxiang
+ * @author goldolphin
  *         2015-08-27 10:00:00.
  */
 
@@ -10,31 +10,9 @@
 #include <utils/sbuilder.h>
 
 typedef enum {
-    TOKEN_ID,
-
-    // Literals
-    TOKEN_NUMBER,
-    TOKEN_STRING,
-
-    // Keywords
-    TOKEN_IMPORT,
-    TOKEN_LET,
-    TOKEN_STRUCT,
-    TOKEN_EXTENDS,
-    TOKEN_FUN,
-
-    // Punctuations
-    TOKEN_LPAREN,
-    TOKEN_RPAREN,
-    TOKEN_COMMA,
-    TOKEN_PERIOD,
-    TOKEN_COLON,
-    TOKEN_SEMICOLON,
-    TOKEN_LBRACKET,
-    TOKEN_RBRACKET,
-    TOKEN_LBRACE,
-    TOKEN_RBRACE,
-    TOKEN_GRAVE,
+#define TOKEN_DEF(a, b) a,
+#include "token_define.def"
+#undef TOKEN_DEF
 } token_type_t;
 
 typedef struct {
@@ -42,6 +20,10 @@ typedef struct {
     uint8_t *value;
     int value_len;
 } token_t;
+
+const char *token_type_name(token_type_t type);
+
+const char *token_type_value(token_type_t type);
 
 void token_init(token_t * token, token_type_t type, uint8_t *value, int value_len);
 

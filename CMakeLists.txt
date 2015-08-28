@@ -8,18 +8,25 @@ include_directories(src/main)
 
 add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c)
 
-add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c src/main/lexer/token.c src/main/lexer/token.h)
+add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c src/main/lexer/token.c src/main/lexer/token.h src/main/lexer/token_define.def)
 target_link_libraries(lexer utils)
 
-add_executable(array src/test/c/array.c)
+add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h)
+target_link_libraries(parser lexer)
+
+add_executable(array src/test/c/array.c src/main/parser/parser.c src/main/parser/parser.h)
 add_executable(list src/test/c/list.c)
 
 add_executable(test-matcher src/test/utils/test_matcher.c)
 target_link_libraries(test-matcher utils)
 
+configure_file(src/test/evo/list.evo src/test/evo/list.evo)
+
 add_executable(test-lexer src/test/lexer/test_lexer.c)
 target_link_libraries(test-lexer lexer)
-configure_file(src/test/evo/list.evo src/test/evo/list.evo)
+
+add_executable(test-parser src/test/parser/test_parser.c)
+target_link_libraries(test-parser parser)
 
 enable_testing()
 add_test(NAME array COMMAND array)

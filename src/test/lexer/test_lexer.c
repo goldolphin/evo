@@ -4,10 +4,10 @@
 #include <stdbool.h>
 #include <utils/memory.h>
 #include <lexer/lexer.h>
-#include <utils/sbuilder.h>
+#include <lexer/character.h>
 
 /**
- * @author caofuxiang
+ * @author goldolphin
  *         2015-08-26 09:29:29.
  */
 
@@ -24,14 +24,15 @@ bool match(lexer_t* lexer, const char * line) {
 int main() {
     int buf_len = 1024;
     FILE * f = fopen("src/test/evo/list.evo", "r");
-    char *buf = new_array(char, buf_len);
+    uint8_t *buf = new_array(uint8_t , buf_len);
     lexer_t lexer;
     lexer_init(&lexer);
     // ensure(match(&lexer, "import IO\n"));
     while (true) {
-        if (fgets(buf, buf_len, f) == NULL) break;
-        // printf("Input: %s\n", buf);
-        ensure(match(&lexer, buf));
+        int read = lexer_read_line(buf, buf_len, f);
+        if (read < 0) break;
+        ensure(is_linebreak(buf[read-1]));
+        ensure(lexer_match(&lexer, buf, read, callback, NULL));
     }
     return 0;
 }

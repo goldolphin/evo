@@ -1,5 +1,5 @@
 /**
- * @author caofuxiang
+ * @author goldolphin
  *         2015-08-19 20:44:44.
  */
 
@@ -23,6 +23,8 @@ void lexer_init(lexer_t * lexer);
 
 void lexer_destroy(lexer_t * lexer);
 
-bool lexer_match(lexer_t * lexer, uint8_t * str, int len, lexer_callback_t callback, void * extra);
+bool lexer_match(lexer_t * lexer, uint8_t *line, int len, lexer_callback_t callback, void * extra);
+
+int lexer_read_line(uint8_t * line, int len, FILE * file);
 
 #endif //EVO_LEXER_H
