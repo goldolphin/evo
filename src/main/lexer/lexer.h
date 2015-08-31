@@ -8,6 +8,7 @@
 
 #include <utils/matcher.h>
 #include "token.h"
+#include "char_stream.h"
 
 #define MAX_TOKEN_LEN 1024
 
@@ -23,7 +24,7 @@ void lexer_init(lexer_t * lexer);
 
 void lexer_destroy(lexer_t * lexer);
 
-bool lexer_match(lexer_t * lexer, uint8_t *line, int len, lexer_callback_t callback, void * extra);
+bool lexer_match(lexer_t * lexer, char_stream_t * stream, lexer_callback_t callback, void * extra);
 
 int lexer_read_line(uint8_t * line, int len, FILE * file);
 
