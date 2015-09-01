@@ -6,12 +6,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -std=gnu++11 -Wall -Werror")
 
 include_directories(src/main)
 
-add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c)
+add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c src/main/utils/string.c src/main/utils/string.h)
 
 add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c src/main/lexer/token.c src/main/lexer/token.h src/main/lexer/token_define.def src/main/lexer/char_stream.c src/main/lexer/char_stream.h src/main/lexer/file_char_stream.c src/main/lexer/file_char_stream.h)
 target_link_libraries(lexer utils)
 
-add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h)
+add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h src/main/parser/token_stream.c src/main/parser/token_stream.h src/main/parser/ast.c src/main/parser/ast.h)
 target_link_libraries(parser lexer)
 
 add_executable(array src/test/c/array.c src/main/parser/parser.c src/main/parser/parser.h)

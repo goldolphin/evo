@@ -8,7 +8,6 @@
 #include <utils/sbuilder.h>
 #include "lexer.h"
 #include "character.h"
-#include "char_stream.h"
 
 static token_type_t keywords[] = {
         TOKEN_IMPORT,
@@ -30,6 +29,7 @@ static token_type_t punctuations[] = {
         TOKEN_LBRACE,
         TOKEN_RBRACE,
         TOKEN_GRAVE,
+        TOKEN_LINEBREAK,
 };
 
 static inline void buffer_reset(lexer_context_t * context) {
