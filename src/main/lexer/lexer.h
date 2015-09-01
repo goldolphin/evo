@@ -18,14 +18,20 @@ typedef struct {
     token_t * punctuations;
 } lexer_t;
 
+typedef struct {
+    uint8_t buf[MAX_TOKEN_LEN];
+    int buf_len;
+    token_t token;
+} lexer_context_t ;
+
 typedef void (* lexer_callback_t) (token_t * token, void * extra);
 
 void lexer_init(lexer_t * lexer);
 
 void lexer_destroy(lexer_t * lexer);
 
-bool lexer_match(lexer_t * lexer, char_stream_t * stream, lexer_callback_t callback, void * extra);
+void lexer_reset_context(lexer_t * lexer, lexer_context_t * context);
 
-int lexer_read_line(uint8_t * line, int len, FILE * file);
+token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t * stream);
 
 #endif //EVO_LEXER_H

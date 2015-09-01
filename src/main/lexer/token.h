@@ -21,6 +21,8 @@ typedef struct {
     int value_len;
 } token_t;
 
+extern token_t * TOKEN_END;
+
 const char *token_type_name(token_type_t type);
 
 const char *token_type_value(token_type_t type);

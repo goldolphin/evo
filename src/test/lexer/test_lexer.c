@@ -8,7 +8,7 @@
  *         2015-08-26 09:29:29.
  */
 
-void callback(token_t * token, void * extra) {
+void print_token(token_t * token) {
     SBUILDER(builder, 1024);
     sbuilder_token(&builder, token);
     printf("%s\n", builder.buf);
@@ -19,6 +19,13 @@ int main() {
     file_char_stream_init(&stream, "src/test/evo/list.evo", 4096);
     lexer_t lexer;
     lexer_init(&lexer);
-    ensure(lexer_match(&lexer, &stream.super, callback, NULL));
+    lexer_context_t ctx;
+    lexer_reset_context(&lexer, &ctx);
+    while (true) {
+        token_t * token = lexer_poll(&lexer, &ctx, &stream.super);
+        ensure(token != NULL);
+        if (token == TOKEN_END) break;
+        print_token(token);
+    }
     return 0;
 }
