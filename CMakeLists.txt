@@ -11,7 +11,7 @@ add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/ma
 add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c src/main/lexer/token.c src/main/lexer/token.h src/main/lexer/token_define.def src/main/lexer/char_stream.c src/main/lexer/char_stream.h src/main/lexer/file_char_stream.c src/main/lexer/file_char_stream.h)
 target_link_libraries(lexer utils)
 
-add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h src/main/parser/token_stream.c src/main/parser/token_stream.h src/main/parser/ast.c src/main/parser/ast.h)
+add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h src/main/parser/token_stream.c src/main/parser/token_stream.h src/main/parser/ast.c src/main/parser/ast.h src/main/parser/ast_define.def)
 target_link_libraries(parser lexer)
 
 add_executable(array src/test/c/array.c src/main/parser/parser.c src/main/parser/parser.h)
