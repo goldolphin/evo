@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <utils/sbuilder.h>
+#include <utils/string.h>
 
 typedef enum {
 #define TOKEN_DEF(a, b) a,
@@ -17,8 +18,7 @@ typedef enum {
 
 typedef struct {
     token_type_t type;
-    uint8_t *value;
-    int value_len;
+    string_t value;
 } token_t;
 
 extern token_t * TOKEN_END;

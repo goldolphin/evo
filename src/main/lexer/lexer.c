@@ -6,8 +6,10 @@
 #include <stdio.h>
 #include <utils/matcher.h>
 #include <utils/sbuilder.h>
+#include <utils/string.h>
 #include "lexer.h"
 #include "character.h"
+#include "token.h"
 
 static token_type_t keywords[] = {
         TOKEN_IMPORT,
@@ -29,7 +31,7 @@ static token_type_t punctuations[] = {
         TOKEN_LBRACE,
         TOKEN_RBRACE,
         TOKEN_GRAVE,
-        TOKEN_LINEBREAK,
+//        TOKEN_LINEBREAK,
 };
 
 static inline void buffer_reset(lexer_context_t * context) {
@@ -47,7 +49,7 @@ void lexer_init(lexer_t * lexer) {
         token_t * token = new_data(token_t);
         const char * value = token_type_value(keywords[i]);
         token_init(token, keywords[i], (uint8_t *) value, (int) strlen(value));
-        matcher_pattern_init(&lexer->keywords[i], token->value, token->value_len, token);
+        matcher_pattern_init(&lexer->keywords[i], token->value.value, token->value.len, token);
     }
     matcher_init(&lexer->keyword_matcher, lexer->keywords, keyword_num);
 
@@ -76,7 +78,7 @@ void lexer_reset_context(lexer_t * lexer, lexer_context_t * context) {
 static inline token_t * parse_punctuation(lexer_t * lexer, uint8_t c) {
     int punctuation_num = (int) array_size(punctuations);
     for (int i = 0; i < punctuation_num; ++i) {
-        if (lexer->punctuations[i].value[0] == c) {
+        if (string_equals_u(&lexer->punctuations[i].value, &c, 1)) {
             return &lexer->punctuations[i];
         }
     }
@@ -92,7 +94,7 @@ static inline void print_error(const char * msg, char_stream_t * stream, lexer_c
         if (!c.success || is_linebreak(c.c)) break;
         sbuilder_char(&builder, c.c);
     }
-    printf("%s: %s\n", msg, builder.buf);
+    fprintf(stderr, "%s: %s\n", msg, builder.buf);
 }
 
 static inline bool parse_integer(char_stream_t * stream, lexer_context_t *ctx) {

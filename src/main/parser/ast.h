@@ -17,85 +17,93 @@ typedef enum {
 
 const char *ast_type_name(ast_type_t type);
 
+bool ast_is_expr(ast_type_t type);
+
 typedef struct {
-    string_t name;
+    string_t * name;
 } ast_id_t;
 
 typedef struct ast_cid_s {
-    ast_id_t id;
+    ast_id_t * id;
     struct ast_cid_s * parent;
 } ast_cid_t;
 
 typedef struct {
-    ast_id_t id;
-    ast_cid_t type;
+    ast_id_t * id;
+    ast_cid_t * type;
 } ast_var_declare_t;
 
 typedef struct ast_var_declare_list_s {
-    ast_var_declare_t var;
+    ast_var_declare_t * var;
     struct ast_var_declare_list_s * next;
 } ast_var_declare_list_t;
 
 typedef struct {
-
+    ast_type_t type;
 } ast_statement_t;
 
 typedef struct ast_statement_list_s {
-    ast_statement_t statement;
+    ast_statement_t * statement;
     struct ast_statement_list_s * next;
 } ast_statement_list_t;
 
 typedef struct {
-
+    ast_statement_t super;
 } ast_expr_t;
 
 typedef struct ast_expr_list_s {
-    ast_expr_t expr;
+    ast_expr_t * expr;
     struct ast_expr_list_s * next;
 } ast_expr_list_t;
 
-typedef struct {
-    ast_cid_t module;
-} ast_import_t;
+#define DEFINE_STATEMENT(name, body) \
+typedef struct {ast_statement_t super; body} name;
 
-typedef struct {
-    ast_id_t id;
+#define DEFINE_EXPR(name, body) \
+typedef struct {ast_expr_t super; body} name;
+
+DEFINE_STATEMENT(ast_import_t,
+    ast_cid_t * module;
+)
+
+DEFINE_STATEMENT(ast_struct_t,
+    ast_id_t * id;
     ast_var_declare_list_t * members;
     ast_cid_t * parent;
-} ast_struct_t;
+)
 
-typedef struct {
-    ast_var_declare_t var;
-    ast_expr_t expr;
-} ast_let_t;
+DEFINE_STATEMENT(ast_let_t,
+    ast_var_declare_t * var;
+    ast_expr_t * expr;
+)
 
-typedef struct {
+DEFINE_EXPR(ast_fun_t,
     ast_var_declare_list_t * params;
-    ast_cid_t return_type;
-    ast_expr_t body;
-} ast_fun_t;
+    ast_cid_t * return_type;
+    ast_expr_t * body;
+)
 
-typedef struct {
+DEFINE_EXPR(ast_block_t,
     ast_statement_list_t * statements;
-    ast_expr_t the_last;
-} ast_block_t;
+    ast_expr_t * the_last;
+)
 
-typedef struct {
-    ast_expr_t function;
+DEFINE_EXPR(ast_fun_apply_t,
+    ast_expr_t * function;
     ast_expr_list_t * operands;
-} ast_fun_apply_t;
+)
 
-typedef struct {
-    ast_cid_t id;
+DEFINE_EXPR(ast_ref_t,
+    ast_cid_t * id;
     ast_expr_t * base;
-} ast_ref_t;
+)
 
-typedef struct {
-    string_t value;
-} ast_str_t;
+DEFINE_EXPR(ast_str_t,
+    string_t * value;
+)
 
-typedef struct {
+DEFINE_EXPR(ast_double_t,
     double value;
-} ast_double_t;
+)
 
 #endif //EVO_AST_H
