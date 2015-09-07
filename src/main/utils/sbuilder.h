@@ -44,7 +44,7 @@ static inline bool sbuilder_long(sbuilder_t * builder, long l) {
 }
 
 static inline bool sbuilder_bool(sbuilder_t * builder, bool b) {
-    return sbuilder_char(builder, b ? 't' : 'f');
+    return sbuilder_char(builder, (char) (b ? 't' : 'f'));
 }
 
 static inline bool sbuilder_binary(sbuilder_t * builder, uint64_t i, size_t len) {

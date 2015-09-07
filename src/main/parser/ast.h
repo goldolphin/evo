@@ -10,14 +10,10 @@
 #include <utils/string.h>
 
 typedef enum {
-#define AST_DEF(a, b) a,
+#define AST_DEF(a, b, c, d) a,
 #include "ast_define.def"
 #undef AST_DEF
 } ast_type_t;
-
-const char *ast_type_name(ast_type_t type);
-
-bool ast_is_expr(ast_type_t type);
 
 typedef struct {
     string_t * name;
@@ -94,8 +90,8 @@ DEFINE_EXPR(ast_fun_apply_t,
 )
 
 DEFINE_EXPR(ast_ref_t,
-    ast_cid_t * id;
     ast_expr_t * base;
+    ast_cid_t * cid;
 )
 
 DEFINE_EXPR(ast_str_t,
@@ -105,5 +101,11 @@ DEFINE_EXPR(ast_str_t,
 DEFINE_EXPR(ast_double_t,
     double value;
 )
+
+const char *ast_type_name(ast_type_t type);
+
+bool ast_is_expr(ast_type_t type);
+
+void print_statement(int level, ast_statement_t * statement);
 
 #endif //EVO_AST_H
