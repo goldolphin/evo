@@ -134,7 +134,9 @@ static void print_fun_apply(int level, ast_fun_apply_t * fun_apply) {
 static void print_ref(int level, ast_ref_t * ref) {
     print_indent(level, "ref");
     print_cid(level+1, ref->cid);
-    print_statement(level+1, &ref->base->super);
+    if (ref->base != NULL) {
+        print_statement(level+1, &ref->base->super);
+    }
 }
 
 static void print_str(int level, ast_str_t * str) {

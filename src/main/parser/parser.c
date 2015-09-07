@@ -6,28 +6,30 @@
 #include <lexer/token.h>
 #include "parser.h"
 
-static inline void require(bool condition, const char * message) {
+static inline void require(bool condition, const char * message, token_stream_t * stream) {
     if (!condition) {
-        fprintf(stderr, "%s\n", message);
+        SBUILDER(builder, 1024);
+        sbuilder_token(&builder, token_stream_peek(stream));
+        fprintf(stderr, "%s\nbefore %s", message, builder.buf);
         ensure(false);
     }
 }
 
-static inline void require_token(token_t * token, token_type_t type) {
+static inline void require_token(token_t * token, token_type_t type, token_stream_t * stream) {
     if (token == NULL || token->type != type) {
         SBUILDER(builder, 1024);
         sbuilder_format(&builder, "Need token %s, but given ", token_type_name(type));
         sbuilder_token(&builder, token);
-        require(false, builder.buf);
+        require(false, builder.buf, stream);
     }
 }
 
-static inline void require_id(token_t * token, const char * value) {
+static inline void require_id(token_t * token, const char * value, token_stream_t * stream) {
     if (token == NULL || token->type != TOKEN_ID || !string_equals_c(&token->value, value)) {
         SBUILDER(builder, 1024);
         sbuilder_format(&builder, "Need id %s, but given ", value);
         sbuilder_token(&builder, token);
-        require(false, builder.buf);
+        require(false, builder.buf, stream);
     }
 }
 
@@ -178,10 +180,10 @@ ast_cid_t * parse_cid(token_stream_t * stream) {
 }
 
 ast_import_t * parse_import(token_stream_t * stream) {
-    require_token(token_stream_poll(stream), TOKEN_IMPORT);
+    require_token(token_stream_poll(stream), TOKEN_IMPORT, stream);
 
     ast_cid_t * module = parse_cid(stream);
-    require(module != NULL, "Need cid!");
+    require(module != NULL, "Need cid!", stream);
     return make_import(module);
 }
 
@@ -193,7 +195,7 @@ ast_var_declare_t * parse_var_declare(token_stream_t * stream) {
     if (token->type == TOKEN_COLON) {
         token_stream_poll(stream);
         type = parse_cid(stream);
-        require(type != NULL, "Need cid!");
+        require(type != NULL, "Need cid!", stream);
     }
     return make_var_declare(id, type);
 }
@@ -211,14 +213,14 @@ ast_var_declare_list_t * parse_var_declare_list(token_stream_t * stream) {
 }
 
 ast_struct_t * parse_struct(token_stream_t * stream) {
-    require_token(token_stream_poll(stream), TOKEN_STRUCT);
+    require_token(token_stream_poll(stream), TOKEN_STRUCT, stream);
 
     ast_id_t * id = parse_id(stream);
-    require(id != NULL, "Need id!");
+    require(id != NULL, "Need id!", stream);
 
-    require_token(token_stream_poll(stream), TOKEN_LPAREN);
+    require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
     ast_var_declare_list_t * members = parse_var_declare_list(stream);
-    require_token(token_stream_poll(stream), TOKEN_RPAREN);
+    require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
 
     ast_cid_t * parent = NULL;
     if (token_stream_peek(stream)->type == TOKEN_EXTENDS) {
@@ -230,15 +232,15 @@ ast_struct_t * parse_struct(token_stream_t * stream) {
 }
 
 ast_let_t * parse_let(token_stream_t * stream) {
-    require_token(token_stream_poll(stream), TOKEN_LET);
+    require_token(token_stream_poll(stream), TOKEN_LET, stream);
 
     ast_var_declare_t * var = parse_var_declare(stream);
-    require(var != NULL, "Need id");
+    require(var != NULL, "Need id", stream);
 
-    require_id(token_stream_poll(stream), "=");
+    require_id(token_stream_poll(stream), "=", stream);
 
     ast_expr_t * expr = parse_expr(stream);
-    require(expr != NULL, "Need expr");
+    require(expr != NULL, "Need expr", stream);
     return make_let(var, expr);
 }
 
@@ -266,11 +268,11 @@ ast_statement_t * parse_statement(token_stream_t * stream) {
 }
 
 ast_fun_t * parse_fun(token_stream_t * stream) {
-    require_token(token_stream_poll(stream), TOKEN_FUN);
+    require_token(token_stream_poll(stream), TOKEN_FUN, stream);
 
-    require_token(token_stream_poll(stream), TOKEN_LPAREN);
+    require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
     ast_var_declare_list_t * params = parse_var_declare_list(stream);
-    require_token(token_stream_poll(stream), TOKEN_RPAREN);
+    require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
 
     ast_cid_t * return_type = NULL;
     if (token_stream_peek(stream)->type == TOKEN_COLON) {
@@ -278,7 +280,7 @@ ast_fun_t * parse_fun(token_stream_t * stream) {
     }
 
     ast_expr_t * body = parse_expr(stream);
-    require(body != NULL, "Need body");
+    require(body != NULL, "Need body", stream);
 
     return make_fun(params, return_type, body);
 }
@@ -295,7 +297,7 @@ static bool parse_block_rec(token_stream_t * stream, ast_statement_list_t ** p_s
         *p_the_last = the_last;
         return true;
     } else {
-        require(ast_is_expr(statement->type), "Need expr");
+        require(ast_is_expr(statement->type), "Need expr", stream);
         *p_statements = NULL;
         *p_the_last = container_of(statement, ast_expr_t, super);
         return true;
@@ -303,11 +305,11 @@ static bool parse_block_rec(token_stream_t * stream, ast_statement_list_t ** p_s
 }
 
 ast_block_t * parse_block(token_stream_t * stream) {
-    require_token(token_stream_poll(stream), TOKEN_LPAREN);
+    require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
     ast_statement_list_t * statements;
     ast_expr_t * the_last;
-    require(parse_block_rec(stream, &statements, &the_last), "Need block");
-    require_token(token_stream_poll(stream), TOKEN_RPAREN);
+    require(parse_block_rec(stream, &statements, &the_last), "Need block", stream);
+    require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
     return make_block(statements, the_last);
 }
 
@@ -345,20 +347,20 @@ ast_expr_list_t * parse_expr_list(token_stream_t * stream) {
 }
 
 ast_fun_apply_t * parse_fun_apply(ast_expr_t * function, token_stream_t * stream) {
-    require(function != NULL, "Need function");
-    require_token(token_stream_poll(stream), TOKEN_LPAREN);
+    require(function != NULL, "Need function", stream);
+    require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
     ast_expr_list_t * operands = parse_expr_list(stream);
-    require_token(token_stream_poll(stream), TOKEN_RPAREN);
+    require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
     return make_fun_apply(function, operands);
 }
 
 ast_ref_t * parse_ref(ast_expr_t * base, token_stream_t * stream) {
     if (base != NULL) {
-        require_token(token_stream_poll(stream), TOKEN_PERIOD);
+        require_token(token_stream_poll(stream), TOKEN_PERIOD, stream);
     }
     ast_cid_t * cid = parse_cid(stream);
     if (cid == NULL) {
-        require(base == NULL, "Need cid");
+        require(base == NULL, "Need cid", stream);
         return NULL;
     }
     return make_ref(base, cid);

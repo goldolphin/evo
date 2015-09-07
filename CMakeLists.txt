@@ -14,7 +14,7 @@ target_link_libraries(lexer utils)
 add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h src/main/parser/token_stream.c src/main/parser/token_stream.h src/main/parser/ast.c src/main/parser/ast.h src/main/parser/ast_define.def)
 target_link_libraries(parser lexer)
 
-add_executable(array src/test/c/array.c src/main/parser/parser.c src/main/parser/parser.h)
+add_executable(array src/test/c/array.c)
 add_executable(list src/test/c/list.c)
 
 add_executable(test-matcher src/test/utils/test_matcher.c)
