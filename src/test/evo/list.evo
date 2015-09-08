@@ -28,7 +28,7 @@ let cons = fun(value: Int, tail: List): List (
     Cons(value, tail)
 )
 
-let reverse = fun(l: List): List {
+let reverse = fun(l: List): List (
     if (l == nil || l.tail == nil,
         l, (
         let loop = fun(l: List, r: List): List (

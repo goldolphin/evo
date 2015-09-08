@@ -20,7 +20,7 @@ int main() {
     lexer_t lexer;
     lexer_init(&lexer);
     lexer_context_t ctx;
-    lexer_reset_context(&lexer, &ctx);
+    lexer_init_context(&lexer, &ctx);
     while (true) {
         token_t * token = lexer_poll(&lexer, &ctx, &stream.super);
         ensure(token != NULL);

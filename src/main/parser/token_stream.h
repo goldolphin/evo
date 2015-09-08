@@ -21,4 +21,6 @@ token_t * token_stream_peek(token_stream_t * stream);
 
 token_t * token_stream_poll(token_stream_t * stream);
 
+source_info_t * token_stream_source_info(token_stream_t * stream);
+
 #endif //EVO_TOKEN_STREAM_H

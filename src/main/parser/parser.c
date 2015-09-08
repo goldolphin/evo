@@ -3,35 +3,8 @@
  *         2015-08-28 16:35:35.
  */
 
-#include <lexer/token.h>
 #include "parser.h"
-
-static inline void require(bool condition, const char * message, token_stream_t * stream) {
-    if (!condition) {
-        SBUILDER(builder, 1024);
-        sbuilder_token(&builder, token_stream_peek(stream));
-        fprintf(stderr, "%s\nbefore %s", message, builder.buf);
-        ensure(false);
-    }
-}
-
-static inline void require_token(token_t * token, token_type_t type, token_stream_t * stream) {
-    if (token == NULL || token->type != type) {
-        SBUILDER(builder, 1024);
-        sbuilder_format(&builder, "Need token %s, but given ", token_type_name(type));
-        sbuilder_token(&builder, token);
-        require(false, builder.buf, stream);
-    }
-}
-
-static inline void require_id(token_t * token, const char * value, token_stream_t * stream) {
-    if (token == NULL || token->type != TOKEN_ID || !string_equals_c(&token->value, value)) {
-        SBUILDER(builder, 1024);
-        sbuilder_format(&builder, "Need id %s, but given ", value);
-        sbuilder_token(&builder, token);
-        require(false, builder.buf, stream);
-    }
-}
+#include "utils.h"
 
 static inline string_t * string_dup(string_t * from) {
     uint8_t * s = new_array(uint8_t, from->len);
@@ -276,6 +249,7 @@ ast_fun_t * parse_fun(token_stream_t * stream) {
 
     ast_cid_t * return_type = NULL;
     if (token_stream_peek(stream)->type == TOKEN_COLON) {
+        token_stream_poll(stream);
         return_type = parse_cid(stream);
     }
 

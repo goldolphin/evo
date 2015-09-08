@@ -7,7 +7,7 @@
 
 void token_stream_init(token_stream_t * stream, lexer_t * lexer, char_stream_t * char_stream) {
     stream->lexer = lexer;
-    lexer_reset_context(lexer, &stream->lc);
+    lexer_init_context(lexer, &stream->lc);
     stream->cs = char_stream;
     stream->token = NULL;
 }
@@ -29,4 +29,8 @@ token_t * token_stream_poll(token_stream_t * stream) {
     }
     stream->token = NULL;
     return token;
+}
+
+source_info_t * token_stream_source_info(token_stream_t * stream) {
+    return &stream->lc.source_info;
 }

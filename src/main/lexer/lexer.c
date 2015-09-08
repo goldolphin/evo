@@ -10,6 +10,8 @@
 #include "lexer.h"
 #include "character.h"
 #include "token.h"
+#include "char_stream.h"
+#include "source_info.h"
 
 static token_type_t keywords[] = {
         TOKEN_IMPORT,
@@ -71,8 +73,8 @@ void lexer_destroy(lexer_t * lexer) {
     free(lexer->punctuations);
 }
 
-void lexer_reset_context(lexer_t * lexer, lexer_context_t * context) {
-
+void lexer_init_context(lexer_t * lexer, lexer_context_t * context) {
+    source_info_init(&context->source_info, 1024);
 }
 
 static inline token_t * parse_punctuation(lexer_t * lexer, uint8_t c) {
@@ -85,16 +87,16 @@ static inline token_t * parse_punctuation(lexer_t * lexer, uint8_t c) {
     return NULL;
 }
 
-static inline void print_error(const char * msg, char_stream_t * stream, lexer_context_t * ctx) {
-    SBUILDER(builder, 4096);
-    sbuilder_nstr(&builder, (const char *) ctx->buf, ctx->buf_len);
-    sbuilder_str(&builder, "_###_");
-    while (true) {
-        bool_char_t c = char_stream_poll(stream);
-        if (!c.success || is_linebreak(c.c)) break;
-        sbuilder_char(&builder, c.c);
+static inline bool_char_t poll_char(lexer_context_t * context, char_stream_t * stream) {
+    bool_char_t c = char_stream_poll(stream);
+    if (c.success) {
+        source_info_update(&context->source_info, c.c);
     }
-    fprintf(stderr, "%s: %s\n", msg, builder.buf);
+    return c;
+}
+
+static inline void print_error(const char * msg, char_stream_t * stream, lexer_context_t * ctx) {
+    fprintf(stderr, "[LEXER ERROR] %s\n\tat [%d, %d] %s~~~\n", msg, ctx->source_info.line, ctx->source_info.column, ctx->source_info.buffer.buf);
 }
 
 static inline bool parse_integer(char_stream_t * stream, lexer_context_t *ctx) {
@@ -104,7 +106,7 @@ static inline bool parse_integer(char_stream_t * stream, lexer_context_t *ctx) {
         if (!c.success || !is_digit(c.c)) break;
         buffer_add(ctx, c.c);
         success = true;
-        char_stream_poll(stream);
+        poll_char(ctx, stream);
     }
     return success;
 }
@@ -113,7 +115,7 @@ static inline bool parse_float(char_stream_t * stream, lexer_context_t *ctx) {
     parse_integer(stream, ctx);
     bool_char_t c = char_stream_peek(stream);
     if (c.success && c.c == '.') {
-        char_stream_poll(stream);
+        poll_char(ctx, stream);
         if (!parse_integer(stream, ctx)) {
             return false;
         }
@@ -121,7 +123,7 @@ static inline bool parse_float(char_stream_t * stream, lexer_context_t *ctx) {
 
     c = char_stream_peek(stream);
     if (c.success && c.c == 'e') {
-        char_stream_poll(stream);
+        poll_char(ctx, stream);
         if (!parse_integer(stream, ctx)) {
             return false;
         }
@@ -131,14 +133,14 @@ static inline bool parse_float(char_stream_t * stream, lexer_context_t *ctx) {
 
 static inline bool parse_string(char_stream_t * stream, lexer_context_t *ctx) {
     while (true) {
-        bool_char_t c = char_stream_poll(stream);
+        bool_char_t c = poll_char(ctx, stream);
         if (!c.success) break;
         buffer_add(ctx, c.c);
         if (c.c == '"') {
             return true;
         }
         if (c.c == '\\') {
-            c = char_stream_poll(stream);
+            c = poll_char(ctx, stream);
             if (c.success) {
                 buffer_add(ctx, c.c);
             } else {
@@ -170,7 +172,7 @@ static inline token_t * parse_keyword(lexer_t * lexer, char_stream_t * stream, l
             return NULL;
         }
         buffer_add(ctx, next.c);
-        char_stream_poll(stream);
+        poll_char(ctx, stream);
     }
 }
 
@@ -178,16 +180,16 @@ token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t *
     buffer_reset(context);
 
     while (true) {
-        bool_char_t c = char_stream_poll(stream);
+        bool_char_t c = poll_char(context, stream);
         if (!c.success) return TOKEN_END;
 
         // Parse comments
         if (c.c == '/') {
             bool_char_t next = char_stream_peek(stream);
             if (next.success && next.c == '/') {
-                char_stream_poll(stream);
+                poll_char(context, stream);
                 while (true) {
-                    next = char_stream_poll(stream);
+                    next = poll_char(context, stream);
                     if (!next.success || is_linebreak(next.c)) break;
                 }
                 continue;
@@ -239,7 +241,7 @@ token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t *
                 return &context->token;
             }
             buffer_add(context, next.c);
-            char_stream_poll(stream);
+            poll_char(context, stream);
         }
     }
 }

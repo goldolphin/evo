@@ -3,8 +3,8 @@
  *         2015-06-01 20:36:36.
  */
 
-#ifndef NETTLE_STR_BUF_H
-#define NETTLE_STR_BUF_H
+#ifndef EVO_SBUILDER_H
+#define EVO_SBUILDER_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -31,9 +31,7 @@ static inline void sbuilder_reset(sbuilder_t * builder) {
 
 bool sbuilder_format(sbuilder_t * builder, const char *message, ...);
 
-static inline bool sbuilder_char(sbuilder_t * builder, char c) {
-    return sbuilder_format(builder, "%c", c);
-}
+bool sbuilder_char(sbuilder_t * builder, char c);
 
 static inline bool sbuilder_int(sbuilder_t * builder, int i) {
     return sbuilder_format(builder, "%d", i);
@@ -73,4 +71,4 @@ sbuilder_t v; \
 char VNAME(sbuf_)[n]; \
 sbuilder_init(&v, VNAME(sbuf_), n)
 
-#endif //NETTLE_STR_BUF_H
+#endif //EVO_SBUILDER_H

@@ -28,6 +28,15 @@ bool sbuilder_format(sbuilder_t * builder, const char *message, ...) {
     return true;
 }
 
+bool sbuilder_char(sbuilder_t * builder, char c) {
+    if (builder->capacity - builder->len <= 1) {
+        return false;
+    }
+    builder->buf[builder->len++] = c;
+    builder->buf[builder->len] = '\0';
+    return true;
+}
+
 bool sbuilder_nstr(sbuilder_t * builder, const char * s, int n) {
     size_t left = builder->capacity - builder->len;
     if (n > left-1) {

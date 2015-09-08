@@ -9,6 +9,7 @@
 #include <utils/matcher.h>
 #include "token.h"
 #include "char_stream.h"
+#include "source_info.h"
 
 #define MAX_TOKEN_LEN 1024
 
@@ -22,6 +23,7 @@ typedef struct {
     uint8_t buf[MAX_TOKEN_LEN];
     int buf_len;
     token_t token;
+    source_info_t source_info;
 } lexer_context_t ;
 
 typedef void (* lexer_callback_t) (token_t * token, void * extra);
@@ -30,7 +32,7 @@ void lexer_init(lexer_t * lexer);
 
 void lexer_destroy(lexer_t * lexer);
 
-void lexer_reset_context(lexer_t * lexer, lexer_context_t * context);
+void lexer_init_context(lexer_t * lexer, lexer_context_t * context);
 
 token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t * stream);
 
