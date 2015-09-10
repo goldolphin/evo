@@ -24,4 +24,8 @@ bool string_equals(string_t * str1, string_t * str2);
 
 bool sbuilder_string(sbuilder_t * builder, string_t * str);
 
+size_t string_hash_func (void * key);
+
+bool string_equal_func (void * key1, void * key2);
+
 #endif //EVO_STRING_H

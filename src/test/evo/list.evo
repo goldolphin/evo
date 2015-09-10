@@ -73,7 +73,7 @@ let range = fun(start: Int, end: Int): List (
         nil,
         cons(start, range(start+1, end))
     )
-}
+)
 
 let test = fun(len: Int): Unit (
     let start = rand() % 5
@@ -93,7 +93,7 @@ let main = fun(): Unit (
     let loop = fun(i: Int): Unit (
         if (i < n, (
             test(20)
-            printf("\n"))
+            printf("\n")),
             loop(i + 1)
         )
     )

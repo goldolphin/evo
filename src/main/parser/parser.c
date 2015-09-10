@@ -5,14 +5,7 @@
 
 #include "parser.h"
 #include "utils.h"
-
-static inline string_t * string_dup(string_t * from) {
-    uint8_t * s = new_array(uint8_t, from->len);
-    memcpy(s, from->value, (size_t) from->len);
-    string_t * to = new_data(string_t);
-    string_init(to, s, from->len);
-    return to;
-}
+#include "ast.h"
 
 // Basic
 ast_id_t * make_id(string_t * value) {
@@ -129,6 +122,9 @@ ast_ref_t * make_ref(ast_expr_t * base, ast_cid_t * cid) {
     return ref;
 }
 
+ast_fun_apply_t * make_infix_apply(ast_id_t * infix, ast_expr_t * left, ast_expr_t * right) {
+    return make_fun_apply(&make_ref(NULL, make_cid(infix, NULL))->super, make_expr_list(left, make_expr_list(right, NULL)));
+}
 // Parsers
 
 ast_id_t * parse_id(token_stream_t * stream) {
@@ -204,7 +200,7 @@ ast_struct_t * parse_struct(token_stream_t * stream) {
     return make_struct(id, members, parent);
 }
 
-ast_let_t * parse_let(token_stream_t * stream) {
+ast_let_t * parse_let(parser_t * parser, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_LET, stream);
 
     ast_var_declare_t * var = parse_var_declare(stream);
@@ -212,13 +208,13 @@ ast_let_t * parse_let(token_stream_t * stream) {
 
     require_id(token_stream_poll(stream), "=", stream);
 
-    ast_expr_t * expr = parse_expr(stream);
+    ast_expr_t * expr = parse_expr(parser, stream);
     require(expr != NULL, "Need expr", stream);
     return make_let(var, expr);
 }
 
 
-ast_statement_t * parse_statement(token_stream_t * stream) {
+ast_statement_t * parse_statement(parser_t * parser, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
     if (token == TOKEN_END) {
         return NULL;
@@ -231,16 +227,16 @@ ast_statement_t * parse_statement(token_stream_t * stream) {
         case TOKEN_STRUCT:
             return &parse_struct(stream)->super;
         case TOKEN_LET:
-            return &parse_let(stream)->super;
+            return &parse_let(parser, stream)->super;
         default:
             break;
     }
-    ast_expr_t * expr = parse_expr(stream);
+    ast_expr_t * expr = parse_expr(parser, stream);
     if (expr == NULL) return NULL;
     return &expr->super;
 }
 
-ast_fun_t * parse_fun(token_stream_t * stream) {
+ast_fun_t * parse_fun(parser_t * parser, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_FUN, stream);
 
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
@@ -253,20 +249,20 @@ ast_fun_t * parse_fun(token_stream_t * stream) {
         return_type = parse_cid(stream);
     }
 
-    ast_expr_t * body = parse_expr(stream);
+    ast_expr_t * body = parse_expr(parser, stream);
     require(body != NULL, "Need body", stream);
 
     return make_fun(params, return_type, body);
 }
 
-static bool parse_block_rec(token_stream_t * stream, ast_statement_list_t ** p_statements, ast_expr_t ** p_the_last) {
-    ast_statement_t * statement = parse_statement(stream);
+static bool parse_block_rec(parser_t * parser, token_stream_t * stream, ast_statement_list_t ** p_statements, ast_expr_t ** p_the_last) {
+    ast_statement_t * statement = parse_statement(parser, stream);
     if (statement == NULL) {
         return false;
     }
     ast_statement_list_t * statements;
     ast_expr_t * the_last;
-    if (parse_block_rec(stream, &statements, &the_last)) {
+    if (parse_block_rec(parser, stream, &statements, &the_last)) {
         *p_statements = make_statement_list(statement, statements);
         *p_the_last = the_last;
         return true;
@@ -278,11 +274,11 @@ static bool parse_block_rec(token_stream_t * stream, ast_statement_list_t ** p_s
     }
 }
 
-ast_block_t * parse_block(token_stream_t * stream) {
+ast_block_t * parse_block(parser_t * parser, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
     ast_statement_list_t * statements;
     ast_expr_t * the_last;
-    require(parse_block_rec(stream, &statements, &the_last), "Need block", stream);
+    require(parse_block_rec(parser, stream, &statements, &the_last), "Need block", stream);
     require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
     return make_block(statements, the_last);
 }
@@ -308,22 +304,22 @@ ast_double_t * parse_double(token_stream_t * stream) {
     return make_double(atof(str));
 }
 
-ast_expr_list_t * parse_expr_list(token_stream_t * stream) {
-    ast_expr_t * expr = parse_expr(stream);
+ast_expr_list_t * parse_expr_list(parser_t * parser, token_stream_t * stream) {
+    ast_expr_t * expr = parse_expr(parser, stream);
     if (expr == NULL) return NULL;
     token_t * token = token_stream_peek(stream);
     if (token->type == TOKEN_COMMA) {
         token_stream_poll(stream);
-        return make_expr_list(expr, parse_expr_list(stream));
+        return make_expr_list(expr, parse_expr_list(parser, stream));
     } else {
         return make_expr_list(expr, NULL);
     }
 }
 
-ast_fun_apply_t * parse_fun_apply(ast_expr_t * function, token_stream_t * stream) {
+ast_fun_apply_t * parse_fun_apply(parser_t * parser, ast_expr_t * function, token_stream_t * stream) {
     require(function != NULL, "Need function", stream);
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
-    ast_expr_list_t * operands = parse_expr_list(stream);
+    ast_expr_list_t * operands = parse_expr_list(parser, stream);
     require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
     return make_fun_apply(function, operands);
 }
@@ -340,19 +336,19 @@ ast_ref_t * parse_ref(ast_expr_t * base, token_stream_t * stream) {
     return make_ref(base, cid);
 }
 
-static ast_expr_t * parse_expr_rec(ast_expr_t * left, token_stream_t * stream) {
+static ast_expr_t * parse_expr_rec(parser_t * parser, ast_expr_t * left, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
     if (token == TOKEN_END) {
-        return NULL;
+        return left;
     }
     ast_expr_t * new_left = NULL;
     if (left == NULL) {
         switch (token->type) {
             case TOKEN_FUN:
-                new_left = &parse_fun(stream)->super;
+                new_left = &parse_fun(parser, stream)->super;
                 break;
             case TOKEN_LPAREN:
-                new_left = &parse_block(stream)->super;
+                new_left = &parse_block(parser, stream)->super;
                 break;
             case TOKEN_STRING:
                 new_left = &parse_str(stream)->super;
@@ -368,7 +364,7 @@ static ast_expr_t * parse_expr_rec(ast_expr_t * left, token_stream_t * stream) {
     } else {
         switch (token->type) {
             case TOKEN_LPAREN:
-                new_left = &parse_fun_apply(left, stream)->super;
+                new_left = &parse_fun_apply(parser, left, stream)->super;
                 break;
             case TOKEN_PERIOD:
                 new_left = &parse_ref(left, stream)->super;
@@ -376,14 +372,39 @@ static ast_expr_t * parse_expr_rec(ast_expr_t * left, token_stream_t * stream) {
             default:
                 break;
         }
+        ast_fun_apply_t *infix = parse_infix(parser, stream, left);
+        if (infix != NULL) {
+            new_left = &infix->super;
+        }
     }
     if (new_left == NULL) {
         return left;
     } else {
-        return parse_expr_rec(new_left, stream);
+        return parse_expr_rec(parser, new_left, stream);
     }
 }
 
-ast_expr_t * parse_expr(token_stream_t * stream) {
-    return parse_expr_rec(NULL, stream);
+ast_expr_t * parse_expr(parser_t * parser, token_stream_t * stream) {
+    return parse_expr_rec(parser, NULL, stream);
+}
+
+static void parser_add_infix(parser_t * parser, const char * name, bool left2right, int precedence) {
+    string_t s;
+    string_init(&s, (uint8_t *) name, (int) strlen(name));
+    infix_parser_add(&parser->infix_parser, &s, left2right, precedence);
+}
+
+void parser_init(parser_t * parser) {
+    infix_parser_init(&parser->infix_parser);
+    parser_add_infix(parser, "!=", true, 5);
+    parser_add_infix(parser, "==", true, 5);
+    parser_add_infix(parser, "||", true, 5);
+    parser_add_infix(parser, "<", true, 5);
+    parser_add_infix(parser, ">=", true, 5);
+    parser_add_infix(parser, "%", true, 5);
+    parser_add_infix(parser, "+", true, 5);
+}
+
+void parser_destroy(parser_t * parser) {
+    infix_parser_destroy(&parser->infix_parser);
 }

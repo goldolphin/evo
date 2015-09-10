@@ -12,9 +12,11 @@ int main() {
     lexer_init(&lexer);
     token_stream_t ts;
     token_stream_init(&ts, &lexer, &cs.super);
+    parser_t parser;
+    parser_init(&parser);
 
     while (true) {
-        ast_statement_t *statement = parse_statement(&ts);
+        ast_statement_t *statement = parse_statement(&parser, &ts);
         if (statement == NULL) break;
         print_statement(0, statement);
     }

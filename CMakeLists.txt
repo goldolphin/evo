@@ -6,7 +6,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -std=gnu++11 -Wall -Werror")
 
 include_directories(src/main)
 
-add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c src/main/utils/string.c src/main/utils/string.h src/main/utils/stack.c src/main/utils/stack.h)
+add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c
+        src/main/utils/string.c src/main/utils/string.h src/main/utils/pair.c src/main/utils/pair.h src/main/utils/hashmap.c src/main/utils/hashmap.h
+        src/main/utils/stack.h)
 
 add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c src/main/lexer/token.c src/main/lexer/token.h src/main/lexer/token_define.def src/main/lexer/char_stream.c src/main/lexer/char_stream.h src/main/lexer/file_char_stream.c src/main/lexer/file_char_stream.h src/main/lexer/source_info.c src/main/lexer/source_info.h)
 target_link_libraries(lexer utils)

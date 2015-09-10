@@ -32,3 +32,15 @@ bool sbuilder_string(sbuilder_t * builder, string_t * str) {
     return sbuilder_nstr(builder, (const char *) str->value, str->len);
 }
 
+size_t string_hash_func (void * key) {
+    string_t * s = key;
+    size_t h = 0;
+    for (int i = 0; i < s->len; i ++) {
+        h = 31*h + s->value[i];
+    }
+    return h;
+}
+
+bool string_equal_func (void * key1, void * key2) {
+    return string_equals(key1, key2);
+}
