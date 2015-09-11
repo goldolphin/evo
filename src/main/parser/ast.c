@@ -153,6 +153,12 @@ static void print_double(int level, ast_double_t * d) {
     print_indent(level, builder.buf);
 }
 
+static void print_long(int level, ast_long_t * d) {
+    SBUILDER(builder, 1024);
+    sbuilder_format(&builder, "long(%ld)", d->value);
+    print_indent(level, builder.buf);
+}
+
 const char *ast_type_name(ast_type_t type) {
     switch (type) {
 #define AST_DEF(a, b, c, d) case a: return #a;

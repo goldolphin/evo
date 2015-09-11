@@ -150,15 +150,18 @@ static inline void poll_to_buffer(char_stream_t *stream, lexer_context_t *ctx, i
     }
 }
 
-static inline bool parse_float(char_stream_t * stream, lexer_context_t *ctx) {
+static inline bool parse_number(char_stream_t *stream, lexer_context_t *ctx, bool *is_double) {
     int pos = 0;
+    bool is_d = false;
 
     bool has_base = parse_integer(stream, &pos);
     bool_char_t c = char_stream_peek(stream, pos);
     if (c.success && c.c == '.') {
         ++pos;
-        bool has_frac = parse_integer(stream, &pos);;
-        has_base = has_base || has_frac;
+        if (parse_integer(stream, &pos)) {
+            is_d = true;
+            has_base = true;
+        }
     }
     if (!has_base) return false;
 
@@ -168,6 +171,7 @@ static inline bool parse_float(char_stream_t * stream, lexer_context_t *ctx) {
         if (!parse_integer(stream, &pos)) {
             return false;
         }
+        is_d = true;
     }
 
     c = char_stream_peek(stream, pos);
@@ -176,6 +180,7 @@ static inline bool parse_float(char_stream_t * stream, lexer_context_t *ctx) {
     }
 
     poll_to_buffer(stream, ctx, pos);
+    *is_double = is_d;
     return true;
 }
 
@@ -255,8 +260,13 @@ token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t *
 
         // Parse number literals.
         if (c.c == '+' || c.c == '-' || is_digit(c.c)) {
-            if (parse_float(stream, context)) {
-                token_init(&context->token, TOKEN_NUMBER, context->buf, context->buf_len);
+            bool is_double;
+            if (parse_number(stream, context, &is_double)) {
+                if (is_double) {
+                    token_init(&context->token, TOKEN_DOUBLE, context->buf, context->buf_len);
+                } else {
+                    token_init(&context->token, TOKEN_LONG, context->buf, context->buf_len);
+                }
                 return &context->token;
             }
         }

@@ -1,7 +1,8 @@
 TOKEN_DEF(TOKEN_ID, "id")
 
 // Literals
-TOKEN_DEF(TOKEN_NUMBER, "number")
+TOKEN_DEF(TOKEN_LONG, "long")
+TOKEN_DEF(TOKEN_DOUBLE, "double")
 TOKEN_DEF(TOKEN_STRING, "string")
 
 // Keywords

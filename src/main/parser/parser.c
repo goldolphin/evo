@@ -106,6 +106,13 @@ ast_double_t * make_double(double value) {
     return d;
 }
 
+ast_long_t * make_long(long value) {
+    ast_long_t * d = new_data(ast_long_t);
+    d->super.super.type = AST_LONG;
+    d->value = value;
+    return d;
+}
+
 ast_fun_apply_t * make_fun_apply(ast_expr_t * function, ast_expr_list_t * operands) {
     ast_fun_apply_t * fun_apply = new_data(ast_fun_apply_t);
     fun_apply->super.super.type = AST_FUN_APPLY;
@@ -294,7 +301,7 @@ ast_str_t * parse_str(token_stream_t * stream) {
 
 ast_double_t * parse_double(token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
-    if (token->type != TOKEN_NUMBER) {
+    if (token->type != TOKEN_DOUBLE) {
         return NULL;
     }
     token_stream_poll(stream);
@@ -302,6 +309,18 @@ ast_double_t * parse_double(token_stream_t * stream) {
     memcpy(str, token->value.value, (size_t) token->value.len);
     str[token->value.len] = '\0';
     return make_double(atof(str));
+}
+
+ast_long_t * parse_long(token_stream_t * stream) {
+    token_t * token = token_stream_peek(stream);
+    if (token->type != TOKEN_LONG) {
+        return NULL;
+    }
+    token_stream_poll(stream);
+    char str[token->value.len+1];
+    memcpy(str, token->value.value, (size_t) token->value.len);
+    str[token->value.len] = '\0';
+    return make_long(atol(str));
 }
 
 ast_expr_list_t * parse_expr_list(parser_t * parser, token_stream_t * stream) {
@@ -353,8 +372,11 @@ static ast_expr_t * parse_expr_rec(parser_t * parser, ast_expr_t * left, token_s
             case TOKEN_STRING:
                 new_left = &parse_str(stream)->super;
                 break;
-            case TOKEN_NUMBER:
+            case TOKEN_DOUBLE:
                 new_left = &parse_double(stream)->super;
+                break;
+            case TOKEN_LONG:
+                new_left = &parse_long(stream)->super;
                 break;
             case TOKEN_ID:
                 new_left = &parse_ref(NULL, stream)->super;

@@ -102,6 +102,10 @@ DEFINE_EXPR(ast_double_t,
     double value;
 )
 
+DEFINE_EXPR(ast_long_t,
+    long value;
+)
+
 const char *ast_type_name(ast_type_t type);
 
 bool ast_is_expr(ast_type_t type);

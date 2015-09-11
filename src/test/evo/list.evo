@@ -97,7 +97,7 @@ let main = fun(): Unit (
             loop(i + 1)
         )
     )
-    Loop(0)
+    loop(0)
 
     0
 )

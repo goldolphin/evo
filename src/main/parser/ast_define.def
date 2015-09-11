@@ -17,3 +17,4 @@ AST_DEF(AST_FUN_APPLY,          ast_fun_apply_t,          EXPR,        fun_apply
 AST_DEF(AST_REF,                ast_ref_t,                EXPR,        ref)
 AST_DEF(AST_STR,                ast_str_t,                EXPR,        str)
 AST_DEF(AST_DOUBLE,             ast_double_t,             EXPR,        double)
+AST_DEF(AST_LONG,               ast_long_t,               EXPR,        long)
