@@ -17,20 +17,26 @@ typedef struct {
     uint8_t c;
 } bool_char_t;
 
-typedef bool_char_t (* char_stream_peek_t) (char_stream_t *stream);
-typedef bool_char_t (* char_stream_poll_t) (char_stream_t *stream);
+typedef bool_char_t (* char_stream_peek_t) (char_stream_t *stream, int n);
+typedef bool_char_t (* char_stream_poll_t) (char_stream_t *stream, int n);
 
 struct char_stream_s {
     char_stream_peek_t peek;
     char_stream_poll_t poll;
 };
 
-static inline bool_char_t char_stream_peek(char_stream_t *stream) {
-    return stream->peek(stream);
+/**
+ * peek the n-th character, where n starts from 0
+ */
+static inline bool_char_t char_stream_peek(char_stream_t *stream, int n) {
+    return stream->peek(stream, n);
 }
 
-static inline bool_char_t char_stream_poll(char_stream_t *stream) {
-    return stream->poll(stream);
+/**
+ * poll the n-th character, where n starts from 0
+ */
+static inline bool_char_t char_stream_poll(char_stream_t *stream, int n) {
+    return stream->poll(stream, n);
 }
 
 void char_stream_init(char_stream_t *stream, char_stream_peek_t peek, char_stream_poll_t poll);

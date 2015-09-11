@@ -71,7 +71,7 @@ let sort = fun(l: List): List (
 let range = fun(start: Int, end: Int): List (
     if(start >= end,
         nil,
-        cons(start, range(start+1, end))
+        cons(start, range(start + 1, end))
     )
 )
 
@@ -101,3 +101,6 @@ let main = fun(): Unit (
 
     0
 )
+
+-1
+-1.1e-2

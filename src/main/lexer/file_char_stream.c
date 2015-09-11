@@ -6,27 +6,37 @@
 #include <utils/memory.h>
 #include "file_char_stream.h"
 
-static bool_char_t peek(char_stream_t *stream) {
+static inline void read(file_char_stream_t *s) {
+    s->buffer_end += fread(s->buffer+s->buffer_end, 1, (size_t) s->buffer_capacity-s->buffer_end, s->file);
+}
+
+static bool_char_t peek(char_stream_t *stream, int n) {
     file_char_stream_t * s = container_of(stream, file_char_stream_t, super);
     bool_char_t res;
-    if (s->buffer_start >= s->buffer_end) {
+    ensure(n >= 0 && n < s->buffer_capacity);
+    int left = s->buffer_end-s->buffer_start;
+    if (n >= left) {
+        if (left > 0) {
+            memmove(s->buffer, s->buffer+s->buffer_start, (size_t) left);
+        }
         s->buffer_start = 0;
-        s->buffer_end = (int) fread(s->buffer, 1, (size_t) s->buffer_capacity, s->file);
-        if (s->buffer_start >= s->buffer_end) {
+        s->buffer_end = left;
+        read(s);
+        if (n >= s->buffer_end) {
             res.success = false;
             return res;
         }
     }
     res.success = true;
-    res.c = s->buffer[s->buffer_start];
+    res.c = s->buffer[s->buffer_start+n];
     return res;
 }
 
-static bool_char_t poll(char_stream_t *stream) {
-    bool_char_t res = peek(stream);
+static bool_char_t poll(char_stream_t *stream, int n) {
+    bool_char_t res = peek(stream, n);
     if (!res.success) return res;
     file_char_stream_t * s = container_of(stream, file_char_stream_t, super);
-    ++ s->buffer_start;
+    s->buffer_start += n+1;
     return res;
 }
 

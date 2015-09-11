@@ -149,7 +149,7 @@ static void print_str(int level, ast_str_t * str) {
 
 static void print_double(int level, ast_double_t * d) {
     SBUILDER(builder, 1024);
-    sbuilder_format(&builder, "double(%lf)", d);
+    sbuilder_format(&builder, "double(%lf)", d->value);
     print_indent(level, builder.buf);
 }
 
