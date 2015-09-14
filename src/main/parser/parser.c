@@ -355,7 +355,7 @@ ast_ref_t * parse_ref(ast_expr_t * base, token_stream_t * stream) {
     return make_ref(base, cid);
 }
 
-static ast_expr_t * parse_expr_rec(parser_t * parser, ast_expr_t * left, token_stream_t * stream) {
+ast_expr_t * parse_expr_rec(parser_t * parser, ast_expr_t * left, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
     if (token == TOKEN_END) {
         return left;
@@ -394,10 +394,6 @@ static ast_expr_t * parse_expr_rec(parser_t * parser, ast_expr_t * left, token_s
             default:
                 break;
         }
-        ast_fun_apply_t *infix = parse_infix(parser, stream, left);
-        if (infix != NULL) {
-            new_left = &infix->super;
-        }
     }
     if (new_left == NULL) {
         return left;
@@ -407,7 +403,14 @@ static ast_expr_t * parse_expr_rec(parser_t * parser, ast_expr_t * left, token_s
 }
 
 ast_expr_t * parse_expr(parser_t * parser, token_stream_t * stream) {
-    return parse_expr_rec(parser, NULL, stream);
+    ast_expr_t *expr = parse_expr_rec(parser, NULL, stream);
+    if (expr != NULL) {
+        ast_fun_apply_t *infix = parse_infix(parser, stream, expr);
+        if (infix != NULL) {
+            return parse_expr_rec(parser, &infix->super, stream);
+        }
+    }
+    return expr;
 }
 
 static void parser_add_infix(parser_t * parser, const char * name, bool left2right, int precedence) {
@@ -425,6 +428,7 @@ void parser_init(parser_t * parser) {
     parser_add_infix(parser, ">=", true, 5);
     parser_add_infix(parser, "%", true, 5);
     parser_add_infix(parser, "+", true, 5);
+    parser_add_infix(parser, "*", true, 4);
 }
 
 void parser_destroy(parser_t * parser) {

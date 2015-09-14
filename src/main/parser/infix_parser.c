@@ -53,6 +53,8 @@ ast_id_t * make_id(string_t * value);
 
 ast_fun_apply_t * make_infix_apply(ast_id_t * infix, ast_expr_t * left, ast_expr_t * right);
 
+ast_expr_t * parse_expr_rec(parser_t * parser, ast_expr_t * left, token_stream_t * stream);
+
 typedef struct {
     ast_expr_t * left;
     infix_def_t * op;
@@ -60,7 +62,7 @@ typedef struct {
 
 static ast_fun_apply_t *parse_infix_rec(parser_t *parser, token_stream_t *stream, frame_t *top) {
     frame_t new_top;
-    new_top.left = parse_expr(parser, stream);
+    new_top.left = parse_expr_rec(parser, NULL, stream);
     require(new_top.left != NULL, "Need expr", stream);
     new_top.op = parse_infix_def(&parser->infix_parser, stream);
 

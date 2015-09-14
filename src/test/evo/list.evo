@@ -104,3 +104,6 @@ let main = fun(): Unit (
 
 -1
 -1.1e-2
+a + b * c
+a * b + c
+a + b * (c + d) + e * f
