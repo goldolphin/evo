@@ -34,6 +34,7 @@ void lexer_destroy(lexer_t * lexer);
 
 void lexer_init_context(lexer_t * lexer, lexer_context_t * context);
 
+// Returns NULL on error, retValue->type == TOKEN_END on EOF, and valid tokens otherwise.
 token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t * stream);
 
 #endif //EVO_LEXER_H

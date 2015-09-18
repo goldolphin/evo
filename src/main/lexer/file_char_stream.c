@@ -12,8 +12,8 @@ static inline void read(file_char_stream_t *s) {
 
 static bool_char_t peek(char_stream_t *stream, int n) {
     file_char_stream_t * s = container_of(stream, file_char_stream_t, super);
+    ensure(n >= 0);
     bool_char_t res;
-    ensure(n >= 0 && n < s->buffer_capacity);
     int left = s->buffer_end-s->buffer_start;
     if (n >= left) {
         if (left > 0) {

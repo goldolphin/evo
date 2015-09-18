@@ -15,6 +15,10 @@ static inline bool is_digit(uint8_t c) {
     return c >= '0' && c <= '9';
 }
 
+static inline bool is_alpha(uint8_t c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
 static inline bool is_visible(uint8_t c) {
     return c >= 32 && c != 127;
 }
@@ -24,7 +28,7 @@ static inline bool is_linebreak(uint8_t c) {
 }
 
 static inline bool is_space(uint8_t c) {
-    return isspace(c);
+    return isspace(c) != 0;
 }
 
 static inline bool is_punctuation(uint8_t c) {
@@ -33,6 +37,10 @@ static inline bool is_punctuation(uint8_t c) {
 
 static inline bool is_delimiter(uint8_t c) {
     return is_space(c) || is_punctuation(c);
+}
+
+static inline bool is_regular_identifier_letter(uint8_t c) {
+    return is_alpha(c) || is_digit(c) || c > 127 || c == '_';
 }
 
 static inline bool is_identifier_letter(uint8_t c) {

@@ -9,9 +9,9 @@
 #include <utils/string.h>
 #include "lexer.h"
 #include "character.h"
-#include "token.h"
 #include "char_stream.h"
-#include "source_info.h"
+
+static token_t s_token_end = {TOKEN_END, {(uint8_t *) "end", 3}};
 
 static token_type_t keywords[] = {
         TOKEN_IMPORT,
@@ -232,7 +232,7 @@ token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t *
 
     while (true) {
         bool_char_t c = char_stream_peek(stream, 0);
-        if (!c.success) return TOKEN_END;
+        if (!c.success) return &s_token_end;
 
         // Parse comments
         if (c.c == '/') {
@@ -288,9 +288,10 @@ token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t *
         }
 
         // Parse IDs.
+        bool is_regular = is_regular_identifier_letter(c.c);
         while (true) {
             bool_char_t next = char_stream_peek(stream, 0);
-            if (!next.success || !is_identifier_letter(next.c)) {
+            if (!next.success || !is_identifier_letter(next.c) || is_regular_identifier_letter(next.c) != is_regular) {
                 token_init(&context->token, TOKEN_ID, context->buf, context->buf_len);
                 return &context->token;
             }

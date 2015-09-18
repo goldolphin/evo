@@ -8,10 +8,12 @@
 
 #include "ast.h"
 #include "token_stream.h"
-#include "infix_parser.h"
+#include "operator_table.h"
 
 typedef struct parser_s {
-    infix_parser_t infix_parser;
+    operator_table_t prefix_table;
+    operator_table_t postfix_table;
+    operator_table_t binary_table;
 } parser_t;
 
 typedef struct {

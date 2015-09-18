@@ -3,9 +3,9 @@
  *         2015-08-28 16:35:35.
  */
 
+#include <lexer/token.h>
 #include "parser.h"
 #include "utils.h"
-#include "ast.h"
 
 // Basic
 ast_id_t * make_id(string_t * value) {
@@ -129,9 +129,6 @@ ast_ref_t * make_ref(ast_expr_t * base, ast_cid_t * cid) {
     return ref;
 }
 
-ast_fun_apply_t * make_infix_apply(ast_id_t * infix, ast_expr_t * left, ast_expr_t * right) {
-    return make_fun_apply(&make_ref(NULL, make_cid(infix, NULL))->super, make_expr_list(left, make_expr_list(right, NULL)));
-}
 // Parsers
 
 ast_id_t * parse_id(token_stream_t * stream) {
@@ -223,7 +220,7 @@ ast_let_t * parse_let(parser_t * parser, token_stream_t * stream) {
 
 ast_statement_t * parse_statement(parser_t * parser, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
-    if (token == TOKEN_END) {
+    if (token->type == TOKEN_END) {
         return NULL;
     }
     SBUILDER(builder, 1024);
@@ -355,82 +352,206 @@ ast_ref_t * parse_ref(ast_expr_t * base, token_stream_t * stream) {
     return make_ref(base, cid);
 }
 
-ast_expr_t * parse_expr_rec(parser_t * parser, ast_expr_t * left, token_stream_t * stream) {
+ast_expr_t * parse_term(parser_t * parser, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
-    if (token == TOKEN_END) {
-        return left;
+    switch (token->type) {
+        case TOKEN_FUN:
+            return &parse_fun(parser, stream)->super;
+        case TOKEN_LPAREN:
+            return &parse_block(parser, stream)->super;
+        case TOKEN_STRING:
+            return &parse_str(stream)->super;
+        case TOKEN_DOUBLE:
+            return &parse_double(stream)->super;
+        case TOKEN_LONG:
+            return &parse_long(stream)->super;
+        case TOKEN_ID:
+            return &parse_ref(NULL, stream)->super;
+        default:
+            return NULL;
     }
-    ast_expr_t * new_left = NULL;
+}
+
+ast_expr_t * parse_primary(parser_t * parser, token_stream_t * stream) {
+    ast_expr_t * left = NULL;
+    while (true) {
+        ast_expr_t * new_left = NULL;
+        if (left == NULL) {
+            new_left = parse_term(parser, stream);
+        } else {
+            token_t * token = token_stream_peek(stream);
+            switch (token->type) {
+                case TOKEN_LPAREN:
+                    new_left = &parse_fun_apply(parser, left, stream)->super;
+                    break;
+                case TOKEN_PERIOD:
+                    new_left = &parse_ref(left, stream)->super;
+                    break;
+                default:
+                    break;
+            }
+        }
+        if (new_left == NULL) {
+            return left;
+        } else {
+            left = new_left;
+        }
+    }
+}
+
+typedef struct {
+    ast_expr_t * left;
+    operator_def_t * op;
+} frame_t;
+
+static inline operator_def_t * parse_operator_def(operator_table_t * table, token_stream_t * stream) {
+    token_t * token = token_stream_peek(stream);
+    if (token->type != TOKEN_ID) {
+        return NULL;
+    }
+    operator_def_t * def = operator_table_get(table, &token->value);
+    if (def != NULL) {
+        token_stream_poll(stream);
+        return def;
+    }
+    return NULL;
+}
+
+static inline bool operator_le(operator_def_t *left, operator_def_t *right) {
+    if (left->precedence != right->precedence) {
+        return left->precedence <= right->precedence;
+    }
+    return left->left2right;
+}
+
+static inline ast_expr_t * build_unary_apply(operator_def_t * op, ast_expr_t * operand) {
+    if (op == NULL) {
+        return operand;
+    } else {
+        return &make_fun_apply(&make_ref(NULL, make_cid(make_id(&op->name), NULL))->super, make_expr_list(operand, NULL))->super;
+    }
+}
+
+static frame_t parse_unary_rec(parser_t *parser, token_stream_t *stream, operator_def_t * last_prefix) {
+    ast_expr_t *left;
+    operator_def_t *postfix;
+
+    operator_def_t *prefix = parse_operator_def(&parser->prefix_table, stream);
+    if (prefix == NULL) {
+        left = parse_primary(parser, stream);
+        if (left == NULL) {
+            require(last_prefix == NULL, "Need expr", stream);
+            frame_t current;
+            current.left = NULL;
+            current.op = NULL;
+            return current;
+        }
+        postfix = parse_operator_def(&parser->postfix_table, stream);
+    } else {
+        frame_t current = parse_unary_rec(parser, stream, prefix);
+        left = current.left;
+        postfix = current.op;
+    }
+
+    while (true) {
+        if (postfix == NULL || (last_prefix != NULL && operator_le(last_prefix, postfix))) {
+            frame_t current;
+            current.left = build_unary_apply(last_prefix, left);
+            current.op = postfix;
+            return current;
+        } else {
+            left = build_unary_apply(postfix, left);
+            postfix = parse_operator_def(&parser->postfix_table, stream);
+        }
+    }
+}
+
+static inline ast_expr_t * parse_unary(parser_t *parser, token_stream_t *stream) {
+    frame_t ret = parse_unary_rec(parser, stream, NULL);
+    return ret.left;
+}
+
+static inline ast_expr_t * build_binary_apply(operator_def_t * op, ast_expr_t * left, ast_expr_t * right) {
+    if (op == NULL) {
+        ensure(left == NULL);
+        return right;
+    } else {
+        return &make_fun_apply(&make_ref(NULL, make_cid(make_id(&op->name), NULL))->super,
+                               make_expr_list(left, make_expr_list(right, NULL)))->super;
+    }
+}
+
+static frame_t parse_binary_rec(parser_t *parser, token_stream_t *stream, ast_expr_t * last_left, operator_def_t * last_op) {
+    ast_expr_t * left = parse_unary(parser, stream);
     if (left == NULL) {
-        switch (token->type) {
-            case TOKEN_FUN:
-                new_left = &parse_fun(parser, stream)->super;
-                break;
-            case TOKEN_LPAREN:
-                new_left = &parse_block(parser, stream)->super;
-                break;
-            case TOKEN_STRING:
-                new_left = &parse_str(stream)->super;
-                break;
-            case TOKEN_DOUBLE:
-                new_left = &parse_double(stream)->super;
-                break;
-            case TOKEN_LONG:
-                new_left = &parse_long(stream)->super;
-                break;
-            case TOKEN_ID:
-                new_left = &parse_ref(NULL, stream)->super;
-            default:
-                break;
-        }
-    } else {
-        switch (token->type) {
-            case TOKEN_LPAREN:
-                new_left = &parse_fun_apply(parser, left, stream)->super;
-                break;
-            case TOKEN_PERIOD:
-                new_left = &parse_ref(left, stream)->super;
-                break;
-            default:
-                break;
+        require(last_op == NULL, "Need expr", stream);
+        frame_t current;
+        current.left = NULL;
+        current.op = NULL;
+        return current;
+    }
+    operator_def_t * op = parse_operator_def(&parser->binary_table, stream);
+
+    while (true) {
+        if (op == NULL || (last_op != NULL && operator_le(last_op, op))) {
+            frame_t current;
+            current.left = build_binary_apply(last_op, last_left, left);
+            current.op = op;
+            return current;
+        } else {
+            frame_t current = parse_binary_rec(parser, stream, left, op);
+            left = current.left;
+            op = current.op;
         }
     }
-    if (new_left == NULL) {
-        return left;
-    } else {
-        return parse_expr_rec(parser, new_left, stream);
-    }
+}
+
+static inline ast_expr_t * parse_binary(parser_t *parser, token_stream_t *stream) {
+    frame_t ret = parse_binary_rec(parser, stream, NULL, NULL);
+    return ret.left;
 }
 
 ast_expr_t * parse_expr(parser_t * parser, token_stream_t * stream) {
-    ast_expr_t *expr = parse_expr_rec(parser, NULL, stream);
-    if (expr != NULL) {
-        ast_fun_apply_t *infix = parse_infix(parser, stream, expr);
-        if (infix != NULL) {
-            return parse_expr_rec(parser, &infix->super, stream);
-        }
-    }
-    return expr;
+    return parse_binary(parser, stream);
 }
 
-static void parser_add_infix(parser_t * parser, const char * name, bool left2right, int precedence) {
+void parser_add_prefix(parser_t * parser, const char * name, int precedence) {
     string_t s;
     string_init(&s, (uint8_t *) name, (int) strlen(name));
-    infix_parser_add(&parser->infix_parser, &s, left2right, precedence);
+    operator_table_add(&parser->prefix_table, &s, true, precedence);
+}
+
+void parser_add_postfix(parser_t * parser, const char * name, int precedence) {
+    string_t s;
+    string_init(&s, (uint8_t *) name, (int) strlen(name));
+    operator_table_add(&parser->postfix_table, &s, false, precedence);
+}
+
+void parser_add_binary(parser_t * parser, const char * name, bool left2right, int precedence) {
+    string_t s;
+    string_init(&s, (uint8_t *) name, (int) strlen(name));
+    operator_table_add(&parser->binary_table, &s, left2right, precedence);
 }
 
 void parser_init(parser_t * parser) {
-    infix_parser_init(&parser->infix_parser);
-    parser_add_infix(parser, "!=", true, 5);
-    parser_add_infix(parser, "==", true, 5);
-    parser_add_infix(parser, "||", true, 5);
-    parser_add_infix(parser, "<", true, 5);
-    parser_add_infix(parser, ">=", true, 5);
-    parser_add_infix(parser, "%", true, 5);
-    parser_add_infix(parser, "+", true, 5);
-    parser_add_infix(parser, "*", true, 4);
+    operator_table_init(&parser->prefix_table);
+    operator_table_init(&parser->postfix_table);
+    operator_table_init(&parser->binary_table);
+
+    parser_add_binary(parser, "!=", true, 5);
+    parser_add_binary(parser, "==", true, 5);
+    parser_add_binary(parser, "||", true, 5);
+    parser_add_binary(parser, "<", true, 5);
+    parser_add_binary(parser, ">=", true, 5);
+    parser_add_binary(parser, "%", true, 5);
+    parser_add_binary(parser, "+", true, 5);
+    parser_add_binary(parser, "-", true, 5);
+    parser_add_binary(parser, "*", true, 4);
+    parser_add_prefix(parser, "-", 2);
 }
 
 void parser_destroy(parser_t * parser) {
-    infix_parser_destroy(&parser->infix_parser);
+    operator_table_destroy(&parser->prefix_table);
+    operator_table_destroy(&parser->postfix_table);
+    operator_table_destroy(&parser->binary_table);
 }

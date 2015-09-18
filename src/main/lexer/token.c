@@ -6,10 +6,6 @@
 #include <utils/memory.h>
 #include "token.h"
 
-token_t token_end;
-
-token_t * TOKEN_END = &token_end;
-
 const char *token_type_name(token_type_t type) {
     switch (type) {
 #define TOKEN_DEF(a, b) case a: return #a;

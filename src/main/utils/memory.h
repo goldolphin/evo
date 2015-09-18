@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 /**
  * Utils.
@@ -37,5 +38,9 @@
 #define container_of(ptr, type, member) ({ \
 const typeof(((type *)0)->member) *__mptr = (ptr); \
 (type *)((char *)__mptr - offsetof(type, member));})
+
+static inline bool bool_equals(bool a, bool b) {
+    return (a && b) || !(a || b);
+}
 
 #endif //EVO_MEMORY_H

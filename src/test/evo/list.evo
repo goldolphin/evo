@@ -3,13 +3,12 @@
 // @author goldolphin
 //         2015-04-19 10:44
 //
-
 import IO
 import Random
 
 struct List()
 struct Cons(value: Int, tail: List) extends List
-let nil: List = List() 
+let nil: List = List()
 
 let print = fun(l: List): Unit (
     printf("list(")
@@ -104,6 +103,7 @@ let main = fun(): Unit (
 
 -1
 -1.1e-2
-a + b * c
-a * b + c
-a + b * (c + d) + e * f
+a+b * c
+a*b + c
+a+b * (c + d) + e * f
+-a
