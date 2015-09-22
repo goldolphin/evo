@@ -7,22 +7,25 @@
 #include "hashmap.h"
 #include "pair.h"
 
-struct hashmap_entry_s {
-    pair_t key_value;
-    bool used;
-    hashmap_entry_t * prev;
+typedef struct {
     hashmap_entry_t * next;
+} entry_base_t;
+
+struct hashmap_entry_s {
+    entry_base_t super;
+    entry_base_t * prev;
+    bool used;
+    pair_t key_value;
 };
 
 struct hashmap_bucket_s {
-    hashmap_entry_t * head;
+    entry_base_t super;
 };
-
 
 static inline void hashmap_reset(hashmap_t * map) {
     map->size = 0;
     for (size_t i = 0; i < map->bucket_num; ++i) {
-        map->buckets[i].head = NULL;
+        map->buckets[i].super.next = NULL;
     }
     for (size_t i = 0; i < map->capacity; ++i) {
         map->entries[i].used = false;
@@ -95,12 +98,12 @@ static inline void hashmap_put_new(hashmap_t * map, hashmap_bucket_t * bucket, s
         entry->used = true;
 
         // add to the chain.
-        entry->prev = NULL;
-        entry->next = bucket->head;
-        if (entry->next != NULL) {
-            entry->next->prev = entry;
+        entry->prev = &bucket->super;
+        entry->super.next = bucket->super.next;
+        if (entry->super.next != NULL) {
+            entry->super.next->prev = &entry->super;
         }
-        bucket->head = entry;
+        bucket->super.next = entry;
         ++ map->size;
         return;
     }
@@ -114,7 +117,7 @@ bool hashmap_put(hashmap_t * map, void * key, void * value) {
     hashmap_bucket_t * bucket = &map->buckets[hash % map->bucket_num];
 
     // If the entry exists.
-    for (hashmap_entry_t * entry = bucket->head; entry != NULL; entry = entry->next) {
+    for (hashmap_entry_t * entry = bucket->super.next; entry != NULL; entry = entry->super.next) {
         if (map->equal_func(key, entry->key_value.key)) {
             return false;
         }
@@ -125,47 +128,31 @@ bool hashmap_put(hashmap_t * map, void * key, void * value) {
     return true;
 }
 
+hashmap_iterator_t hashmap_find(hashmap_t *map, void *key) {
+    size_t index = map->hash_func(key) % map->bucket_num;
+    hashmap_bucket_t * bucket = &map->buckets[index];
+    for (hashmap_iterator_t entry = bucket->super.next; entry != NULL; entry = entry->super.next) {
+        if (map->equal_func(key, entry->key_value.key)) {
+            return entry;
+        }
+    }
+    return hashmap_end(map);
+}
+
+void hashmap_remove(hashmap_t * map, hashmap_iterator_t iter) {
+    iter->prev->next = iter->super.next;
+    if (iter->super.next != NULL) {
+        iter->super.next->prev = iter->prev;
+    }
+    iter->used = false;
+    -- map->size;
+}
+
 bool hashmap_get(hashmap_t * map, void * key, pair_t * key_value) {
-    size_t index = map->hash_func(key) % map->bucket_num;
-    hashmap_bucket_t * bucket = &map->buckets[index];
-    for (hashmap_entry_t * entry = bucket->head; entry != NULL; entry = entry->next) {
-        if (map->equal_func(key, entry->key_value.key)) {
-            pair_copy(key_value, &entry->key_value);
-            return true;
-        }
-    }
-    return false;
-}
-
-bool hashmap_contains(hashmap_t * map, void * key) {
-    size_t index = map->hash_func(key) % map->bucket_num;
-    hashmap_bucket_t * bucket = &map->buckets[index];
-    for (hashmap_entry_t * entry = bucket->head; entry != NULL; entry = entry->next) {
-        if (map->equal_func(key, entry->key_value.key)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool hashmap_remove(hashmap_t * map, void * key, pair_t * key_value) {
-    size_t index = map->hash_func(key) % map->bucket_num;
-    hashmap_bucket_t * bucket = &map->buckets[index];
-    for (hashmap_entry_t * entry = bucket->head; entry != NULL; entry = entry->next) {
-        if (map->equal_func(key, entry->key_value.key)) {
-            if (entry->prev != NULL) {
-                entry->prev->next = entry->next;
-            } else {
-                bucket->head = entry->next;
-            }
-            if (entry->next != NULL) {
-                entry->next->prev = entry->prev;
-            }
-            entry->used = false;
-            -- map->size;
-            pair_copy(key_value, &entry->key_value);
-            return true;
-        }
+    hashmap_iterator_t entry = hashmap_find(map, key);
+    if (entry != NULL) {
+        hashmap_iterator_get(entry, key_value);
+        return true;
     }
     return false;
 }
@@ -176,24 +163,26 @@ void hashmap_clear(hashmap_t * map) {
 }
 
 static inline hashmap_iterator_t find_valid_entry(hashmap_t *map, hashmap_iterator_t iter) {
-    for (size_t i = iter; i < map->capacity; ++i) {
-        if (map->entries[i].used) {
-            return i;
+    hashmap_iterator_t end = &map->entries[map->capacity];
+    for (; iter < end; iter = &iter[1]) {
+        if (iter->used) {
+            return iter;
         }
     }
     return hashmap_end(map);
 }
 
 hashmap_iterator_t hashmap_begin(hashmap_t * map) {
-    return find_valid_entry(map, 0);
+    return find_valid_entry(map, &map->entries[0]);
 }
 
-hashmap_iterator_t hashmap_next(hashmap_t * map, hashmap_iterator_t iter, pair_t * key_value) {
+hashmap_iterator_t hashmap_next(hashmap_t * map, hashmap_iterator_t iter) {
     ensure(iter != hashmap_end(map));
-    hashmap_entry_t * entry = &map->entries[iter];
-    ensure(entry->used);
-    pair_copy(key_value, &entry->key_value);
-    return find_valid_entry(map, iter + 1);
+    return find_valid_entry(map, &iter[1]);
+}
+
+void hashmap_iterator_get(hashmap_entry_t *iter, pair_t *key_value) {
+    pair_copy(key_value, &iter->key_value);
 }
 
 size_t naive_hash_func (void * key) {

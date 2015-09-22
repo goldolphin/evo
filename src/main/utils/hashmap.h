@@ -20,7 +20,7 @@ typedef struct hashmap_bucket_s hashmap_bucket_t;
 typedef size_t (*hash_func_t) (void * key);
 typedef bool (*equal_func_t) (void * key1, void * key2);
 
-typedef size_t hashmap_iterator_t;
+typedef hashmap_entry_t * hashmap_iterator_t;
 
 /**
  * A hash table
@@ -56,22 +56,24 @@ bool hashmap_put(hashmap_t * map, void * key, void * value);
 
 bool hashmap_get(hashmap_t * map, void * key, pair_t * key_value);
 
-bool hashmap_contains(hashmap_t * map, void * key);
+hashmap_iterator_t hashmap_find(hashmap_t *map, void *key);
 
-bool hashmap_remove(hashmap_t * map, void * key, pair_t * key_value);
+void hashmap_remove(hashmap_t * map, hashmap_iterator_t iter);
 
 void hashmap_clear(hashmap_t * map);
 
 hashmap_iterator_t hashmap_begin(hashmap_t * map);
 
 static inline hashmap_iterator_t hashmap_end(hashmap_t * map) {
-    return map->capacity;
+    return NULL;
 }
 
 /**
  * Return the next valid iterator, or hashmap_end(map) if there're no more bindings after current iterator.
  */
-hashmap_iterator_t hashmap_next(hashmap_t * map, hashmap_iterator_t iter, pair_t * key_value);
+hashmap_iterator_t hashmap_next(hashmap_t * map, hashmap_iterator_t iter);
+
+void hashmap_iterator_get(hashmap_entry_t *iter, pair_t *key_value);
 
 /**
  * Hash functions & Equal functions

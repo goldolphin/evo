@@ -1,5 +1,5 @@
 /**
- * @author caofuxiang
+ * @author goldolphin
  *         2015-09-15 17:23:23.
  */
 
@@ -29,16 +29,18 @@ void operator_table_init(operator_table_t *table) {
 }
 
 void operator_table_destroy(operator_table_t * table) {
-    for (hashmap_iterator_t it = hashmap_begin(&table->operator_def_map); it != hashmap_end(&table->operator_def_map); ) {
+    for (hashmap_iterator_t it = hashmap_begin(&table->operator_def_map);
+         it != hashmap_end(&table->operator_def_map);
+         it = hashmap_next(&table->operator_def_map, it)) {
         pair_t kv;
-        it = hashmap_next(&table->operator_def_map, it, &kv);
+        hashmap_iterator_get(it, &kv);
         destroy_operator_def(kv.value);
     }
     hashmap_destroy(&table->operator_def_map);
 }
 
 bool operator_table_add(operator_table_t *table, string_t * name, bool left2right, int precedence) {
-    if (hashmap_contains(&table->operator_def_map, name)) {
+    if (hashmap_find(&table->operator_def_map, name) != NULL) {
         return false;
     }
     operator_def_t *def = make_operator_def(name, left2right, precedence);
