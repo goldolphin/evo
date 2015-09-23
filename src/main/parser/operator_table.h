@@ -6,7 +6,6 @@
 #ifndef EVO_OPERATOR_TABLE_H
 #define EVO_OPERATOR_TABLE_H
 
-#include <utils/hashmap.h>
 #include "symbol_table.h"
 
 typedef struct {

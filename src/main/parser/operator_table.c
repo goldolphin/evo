@@ -3,7 +3,6 @@
  *         2015-09-15 17:23:23.
  */
 
-#include <utils/string.h>
 #include "operator_table.h"
 
 typedef struct {

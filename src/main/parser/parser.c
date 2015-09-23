@@ -536,6 +536,7 @@ void parser_add_binary(parser_t * parser, const char * name, bool left2right, in
 }
 
 void parser_init(parser_t * parser) {
+    var_table_init(&parser->var_table, SYMBOL_TABLE_INITIAL_CAPACITY);
     operator_table_init(&parser->prefix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
     operator_table_init(&parser->postfix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
     operator_table_init(&parser->binary_table, SYMBOL_TABLE_INITIAL_CAPACITY);
