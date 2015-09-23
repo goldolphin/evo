@@ -7,6 +7,8 @@
 #include "parser.h"
 #include "utils.h"
 
+#define SYMBOL_TABLE_INITIAL_CAPACITY 4096
+
 // Basic
 ast_id_t * make_id(string_t * value) {
     ast_id_t * id = new_data(ast_id_t);
@@ -534,9 +536,9 @@ void parser_add_binary(parser_t * parser, const char * name, bool left2right, in
 }
 
 void parser_init(parser_t * parser) {
-    operator_table_init(&parser->prefix_table);
-    operator_table_init(&parser->postfix_table);
-    operator_table_init(&parser->binary_table);
+    operator_table_init(&parser->prefix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
+    operator_table_init(&parser->postfix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
+    operator_table_init(&parser->binary_table, SYMBOL_TABLE_INITIAL_CAPACITY);
 
     parser_add_binary(parser, "!=", true, 5);
     parser_add_binary(parser, "==", true, 5);

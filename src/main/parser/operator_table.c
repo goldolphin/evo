@@ -4,54 +4,44 @@
  */
 
 #include <utils/string.h>
-#include <utils/pair.h>
 #include "operator_table.h"
 
-#define OPERATOR_DEF_MAP_INITIAL_SIZE 128
+typedef struct {
+    symbol_list_t super;
+    operator_def_t def;
+} operator_list_t;
 
-static operator_def_t * make_operator_def(string_t * name, bool left2right, int precedence) {
-    operator_def_t * def = new_data(operator_def_t);
+static operator_list_t * make_operator_list(string_t * name, bool left2right, int precedence, int level, symbol_list_t * next) {
+    operator_list_t * list = new_data(operator_list_t);
     uint8_t * s = new_array(uint8_t, name->len);
     memcpy(s, name->value, (size_t) name->len);
-    string_init(&def->name, s, name->len);
-    def->left2right = left2right;
-    def->precedence = precedence;
-    return def;
+    string_init(&list->def.name, s, name->len);
+    list->def.left2right = left2right;
+    list->def.precedence = precedence;
+    list->def.level = level;
+    list->super.next = next;
+    return list;
 }
 
-static void destroy_operator_def(operator_def_t * def) {
-    free(def->name.value);
-    free(def);
+static void free_node(symbol_list_t * node) {
+    operator_list_t *n = container_of(node, operator_list_t, super);
+    free(n->def.name.value);
+    free(n);
 }
 
-void operator_table_init(operator_table_t *table) {
-    hashmap_init1(&table->operator_def_map, OPERATOR_DEF_MAP_INITIAL_SIZE, string_hash_func, string_equal_func);
+void operator_table_init(operator_table_t *table, size_t initial_capacity) {
+    symbol_table_init(&table->super, initial_capacity, free_node);
 }
 
 void operator_table_destroy(operator_table_t * table) {
-    for (hashmap_iterator_t it = hashmap_begin(&table->operator_def_map);
-         it != hashmap_end(&table->operator_def_map);
-         it = hashmap_next(&table->operator_def_map, it)) {
-        pair_t kv;
-        hashmap_iterator_get(it, &kv);
-        destroy_operator_def(kv.value);
-    }
-    hashmap_destroy(&table->operator_def_map);
+    symbol_table_destroy(&table->super);
 }
 
 bool operator_table_add(operator_table_t *table, string_t * name, bool left2right, int precedence) {
-    if (hashmap_find(&table->operator_def_map, name) != NULL) {
+    if (hashmap_find(&table->super.map, name) != NULL) {
         return false;
     }
-    operator_def_t *def = make_operator_def(name, left2right, precedence);
-    ensure(hashmap_put(&table->operator_def_map, &def->name, def));
+    operator_list_t * head = make_operator_list(name, left2right, precedence, table->super.level, table->super.scopes->list);
+    symbol_table_add(&table->super, &head->def.name, &head->def);
     return true;
-}
-
-operator_def_t * operator_table_get(operator_table_t *table, string_t * value) {
-    pair_t kv;
-    if (hashmap_get(&table->operator_def_map, value, &kv)) {
-        return kv.value;
-    }
-    return NULL;
 }

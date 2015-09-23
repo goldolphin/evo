@@ -8,15 +8,19 @@ include_directories(src/main)
 
 add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c
         src/main/utils/string.c src/main/utils/string.h src/main/utils/pair.c src/main/utils/pair.h src/main/utils/hashmap.c src/main/utils/hashmap.h
-        src/main/utils/stack.h)
+        src/main/utils/stack.h src/main/utils/list.h)
 
 add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c
         src/main/lexer/token.c src/main/lexer/token.h src/main/lexer/token_define.def src/main/lexer/char_stream.c src/main/lexer/char_stream.h src/main/lexer/file_char_stream.c src/main/lexer/file_char_stream.h src/main/lexer/source_info.c src/main/lexer/source_info.h src/main/lexer/basic_char_stream.c src/main/lexer/basic_char_stream.h)
 target_link_libraries(lexer utils)
 
 add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h src/main/parser/token_stream.c src/main/parser/token_stream.h
-        src/main/parser/ast.c src/main/parser/ast.h src/main/parser/ast_define.def src/main/parser/utils.h src/main/parser/operator_table.c src/main/parser/operator_table.h)
+        src/main/parser/ast.c src/main/parser/ast.h src/main/parser/ast_define.def src/main/parser/utils.h src/main/parser/symbol_table.c src/main/parser/symbol_table.h
+        src/main/parser/operator_table.c src/main/parser/operator_table.h)
 target_link_libraries(parser lexer)
+
+add_library(interpreter STATIC src/main/interpreter/environment.c src/main/interpreter/environment.h)
+target_link_libraries(interpreter parser)
 
 add_executable(array src/test/c/array.c)
 add_executable(list src/test/c/list.c)
@@ -32,7 +36,13 @@ target_link_libraries(test-lexer lexer)
 add_executable(test-parser src/test/parser/test_parser.c)
 target_link_libraries(test-parser parser)
 
+add_executable(test-interpreter src/test/interpreter/test_interpreter.c)
+target_link_libraries(test-interpreter interpreter)
+
 enable_testing()
 add_test(NAME array COMMAND array)
 add_test(NAME list COMMAND list)
 add_test(NAME test-matcher COMMAND test-matcher)
+add_test(NAME test-lexer COMMAND test-lexer)
+add_test(NAME test-parser COMMAND test-parser)
+add_test(NAME test-interpreter COMMAND test-interpreter)
