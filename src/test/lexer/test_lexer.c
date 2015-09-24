@@ -47,6 +47,7 @@ void test_file(const char * filename) {
 }
 
 int main() {
+    test_str("1- - -1");
     test_str("掌上 生活=");
     test_file("src/test/evo/list.evo");
     return 0;

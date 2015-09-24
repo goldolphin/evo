@@ -63,7 +63,7 @@ let sort = fun(l: List): List (
                 )
             )
         )
-        sort0(head.tail, nil, nil))
+        sort0(l.tail, nil, nil))
     )
 )
 
@@ -103,7 +103,3 @@ let main = fun(): Unit (
 
 -1
 -1.1e-2
-a+b * c
-a*b + c
-a+b * (c + d) + e * f
--a

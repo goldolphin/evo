@@ -90,8 +90,14 @@ DEFINE_EXPR(ast_fun_apply_t,
 )
 
 DEFINE_EXPR(ast_ref_t,
+    int level;
+    int index;
+    string_t * name;
+)
+
+DEFINE_EXPR(ast_struct_ref_t,
     ast_expr_t * base;
-    ast_cid_t * cid;
+    ast_id_t * id;
 )
 
 DEFINE_EXPR(ast_str_t,

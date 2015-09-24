@@ -8,11 +8,16 @@
 
 #include <stdbool.h>
 #include <lexer/source_info.h>
+#include <utils/string.h>
 #include "token_stream.h"
 
 static inline void parser_error(const char * func_name, const char * message, token_stream_t * stream) {
-    source_info_t *source_info = token_stream_source_info(stream);
-    fprintf(stderr, "[PARSER ERROR] %s: %s\n\tat [%d, %d] %s~~~\n", func_name, message, source_info->line, source_info->column, source_info->buffer.buf);
+    if (stream == NULL) {
+        fprintf(stderr, "[PARSER ERROR] %s: %s\n", func_name, message);
+    } else {
+        source_info_t *source_info = token_stream_source_info(stream);
+        fprintf(stderr, "[PARSER ERROR] %s: %s\n\tat [%d, %d] %s~~~\n", func_name, message, source_info->line, source_info->column, source_info->buffer.buf);
+    }
 }
 
 static inline void parser_require(const char * func_name, bool condition, const char * message, token_stream_t * stream) {
@@ -52,6 +57,11 @@ static inline string_t * string_dup(string_t * from) {
     string_t * to = new_data(string_t);
     string_init(to, s, from->len);
     return to;
+}
+
+static inline void string_free(string_t * s) {
+    free(s->value);
+    free(s);
 }
 
 #endif //EVO_UTILS_H

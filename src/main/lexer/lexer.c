@@ -175,7 +175,7 @@ static inline bool parse_number(char_stream_t *stream, lexer_context_t *ctx, boo
     }
 
     c = char_stream_peek(stream, pos);
-    if (c.success && is_identifier_letter(c.c)) {
+    if (c.success && is_regular_identifier_letter(c.c)) {
         return false;
     }
 

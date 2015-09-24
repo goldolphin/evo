@@ -9,8 +9,9 @@
 #include "symbol_table.h"
 
 typedef struct {
-    string_t name;
     int level;
+    int index;
+    string_t * name;
 } var_def_t;
 
 typedef struct {
@@ -23,9 +24,7 @@ void var_table_destroy(var_table_t * table);
 
 bool var_table_add(var_table_t *table, string_t * name);
 
-static inline var_def_t * var_table_get(var_table_t *table, string_t * name) {
-    return symbol_table_get(&table->super, name);
-}
+var_def_t * var_table_get(var_table_t *table, string_t * name);
 
 static inline void var_table_enter(var_table_t * table) {
     symbol_table_enter(&table->super);

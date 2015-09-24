@@ -7,12 +7,13 @@
 #define EVO_OPERATOR_TABLE_H
 
 #include "symbol_table.h"
+#include "var_table.h"
 
 typedef struct {
     string_t name;
     bool left2right;
     int precedence;
-    int level;
+    var_def_t * var;
 } operator_def_t;
 
 typedef struct {
@@ -23,11 +24,9 @@ void operator_table_init(operator_table_t *table, size_t initial_capacity);
 
 void operator_table_destroy(operator_table_t * table);
 
-bool operator_table_add(operator_table_t *table, string_t * name, bool left2right, int precedence);
+bool operator_table_add(operator_table_t *table, string_t * name, bool left2right, int precedence, var_def_t * var);
 
-static inline operator_def_t * operator_table_get(operator_table_t *table, string_t * name) {
-    return symbol_table_get(&table->super, name);
-}
+operator_def_t * operator_table_get(operator_table_t *table, string_t * name);
 
 static inline void operator_table_enter(operator_table_t * table) {
     symbol_table_enter(&table->super);

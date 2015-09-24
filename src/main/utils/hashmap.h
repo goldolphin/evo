@@ -52,7 +52,7 @@ static inline size_t hashmap_size(hashmap_t * map) {
 /**
  * Fails if an old binding for the key exists.
  */
-bool hashmap_put(hashmap_t * map, void * key, void * value);
+hashmap_iterator_t hashmap_put(hashmap_t * map, void * key, void * value);
 
 bool hashmap_get(hashmap_t * map, void * key, pair_t * key_value);
 
@@ -74,6 +74,8 @@ static inline hashmap_iterator_t hashmap_end(hashmap_t * map) {
 hashmap_iterator_t hashmap_next(hashmap_t * map, hashmap_iterator_t iter);
 
 void hashmap_iterator_get(hashmap_entry_t *iter, pair_t *key_value);
+
+void hashmap_iterator_set_value(hashmap_entry_t *iter, void * value);
 
 /**
  * Hash functions & Equal functions

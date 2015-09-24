@@ -5,7 +5,6 @@
 
 #include <string.h>
 #include "hashmap.h"
-#include "pair.h"
 
 typedef struct {
     hashmap_entry_t * next;
@@ -80,7 +79,7 @@ static void hashmap_grow(hashmap_t *map) {
     free(entries);
 }
 
-static inline void hashmap_put_new(hashmap_t * map, hashmap_bucket_t * bucket, size_t hash, void * key, void * value) {
+static inline hashmap_iterator_t hashmap_put_new(hashmap_t * map, hashmap_bucket_t * bucket, size_t hash, void * key, void * value) {
     // Ensure capacity.
     while (map->size >= map->bucket_num) {
         hashmap_grow(map);
@@ -105,27 +104,26 @@ static inline void hashmap_put_new(hashmap_t * map, hashmap_bucket_t * bucket, s
         }
         bucket->super.next = entry;
         ++ map->size;
-        return;
+        return entry;
     }
 }
 
 /**
  * Fails if an old binding for the key exists.
  */
-bool hashmap_put(hashmap_t * map, void * key, void * value) {
+hashmap_iterator_t hashmap_put(hashmap_t * map, void * key, void * value) {
     size_t hash = map->hash_func(key);
     hashmap_bucket_t * bucket = &map->buckets[hash % map->bucket_num];
 
     // If the entry exists.
     for (hashmap_entry_t * entry = bucket->super.next; entry != NULL; entry = entry->super.next) {
         if (map->equal_func(key, entry->key_value.key)) {
-            return false;
+            return hashmap_end(map);
         }
     }
 
     // Otherwise
-    hashmap_put_new(map, bucket, hash, key, value);
-    return true;
+    return hashmap_put_new(map, bucket, hash, key, value);
 }
 
 hashmap_iterator_t hashmap_find(hashmap_t *map, void *key) {
@@ -183,6 +181,10 @@ hashmap_iterator_t hashmap_next(hashmap_t * map, hashmap_iterator_t iter) {
 
 void hashmap_iterator_get(hashmap_entry_t *iter, pair_t *key_value) {
     pair_copy(key_value, &iter->key_value);
+}
+
+void hashmap_iterator_set_value(hashmap_entry_t *iter, void * value) {
+    iter->key_value.value = value;
 }
 
 size_t naive_hash_func (void * key) {

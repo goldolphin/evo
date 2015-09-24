@@ -10,16 +10,8 @@ typedef struct {
     operator_def_t def;
 } operator_list_t;
 
-static operator_list_t * make_operator_list(string_t * name, bool left2right, int precedence, int level, symbol_list_t * next) {
-    operator_list_t * list = new_data(operator_list_t);
-    uint8_t * s = new_array(uint8_t, name->len);
-    memcpy(s, name->value, (size_t) name->len);
-    string_init(&list->def.name, s, name->len);
-    list->def.left2right = left2right;
-    list->def.precedence = precedence;
-    list->def.level = level;
-    list->super.next = next;
-    return list;
+static symbol_list_t * new_node() {
+    return &new_data(operator_list_t)->super;
 }
 
 static void free_node(symbol_list_t * node) {
@@ -29,18 +21,32 @@ static void free_node(symbol_list_t * node) {
 }
 
 void operator_table_init(operator_table_t *table, size_t initial_capacity) {
-    symbol_table_init(&table->super, initial_capacity, free_node);
+    symbol_table_init(&table->super, initial_capacity, new_node, free_node);
 }
 
 void operator_table_destroy(operator_table_t * table) {
     symbol_table_destroy(&table->super);
 }
 
-bool operator_table_add(operator_table_t *table, string_t * name, bool left2right, int precedence) {
-    if (hashmap_find(&table->super.map, name) != NULL) {
+bool operator_table_add(operator_table_t *table, string_t * name, bool left2right, int precedence, var_def_t * var) {
+    symbol_list_t *node = symbol_table_add(&table->super, name);
+    if (node == NULL) {
         return false;
     }
-    operator_list_t * head = make_operator_list(name, left2right, precedence, table->super.level, table->super.scopes->list);
-    symbol_table_add(&table->super, &head->def.name, &head->def);
+    operator_list_t *op_node = container_of(node, operator_list_t, super);
+    uint8_t * s = new_array(uint8_t, name->len);
+    memcpy(s, name->value, (size_t) name->len);
+    string_init(&op_node->def.name, s, name->len);
+    op_node->def.left2right = left2right;
+    op_node->def.precedence = precedence;
+    op_node->def.var = var;
     return true;
+}
+
+operator_def_t * operator_table_get(operator_table_t *table, string_t * name) {
+    symbol_list_t *node = symbol_table_get(&table->super, name);
+    if (node == NULL) {
+        return NULL;
+    }
+    return &container_of(node, operator_list_t, super)->def;
 }

@@ -6,8 +6,127 @@
 #include <lexer/token.h>
 #include "parser.h"
 #include "utils.h"
+#include "operator_table.h"
+#include "var_table.h"
 
 #define SYMBOL_TABLE_INITIAL_CAPACITY 4096
+
+// Utilities
+
+static inline var_def_t * parser_get_var(const char * func_name, parser_t * parser, string_t * name, token_stream_t * stream) {
+    var_def_t *def = var_table_get(&parser->var_table, name);
+    if (def == NULL) {
+        SBUILDER(builder, 1024);
+        sbuilder_str(&builder, "Undefined name: ");
+        sbuilder_string(&builder, name);
+        parser_require(func_name, false, builder.buf, stream);
+    }
+    return def;
+}
+
+static inline void parser_define_var(const char * func_name, parser_t * parser, string_t * name, token_stream_t * stream) {
+    if (!var_table_add(&parser->var_table, name)) {
+        SBUILDER(builder, 1024);
+        sbuilder_str(&builder, "Duplicate definition of name: ");
+        sbuilder_string(&builder, name);
+        parser_require(func_name, false, builder.buf, stream);
+    }
+}
+#define get_var(parser, name, stream) parser_get_var(__FUNCTION__, parser, name, stream)
+
+#define define_var(parser, name, stream) parser_define_var(__FUNCTION__, parser, name, stream)
+
+
+static inline void add_op(parser_t * parser, operator_table_t * table, const char * op, int precedence, const char * var) {
+    string_t var_name;
+    string_init(&var_name, (uint8_t *) var, (int) strlen(var));
+    var_def_t * var_def = get_var(parser, &var_name, NULL);
+
+    string_t op_name;
+    string_init(&op_name, (uint8_t *) op, (int) strlen(op));
+    operator_table_add(table, &op_name, true, precedence, var_def);
+}
+
+void parser_add_prefix(parser_t * parser, const char * op, int precedence, const char * var) {
+    add_op(parser, &parser->prefix_table, op, precedence, var);
+}
+
+void parser_add_postfix(parser_t * parser, const char * op, int precedence, const char * var) {
+    add_op(parser, &parser->postfix_table, op, precedence, var);
+}
+
+void parser_add_binary(parser_t * parser, const char * op, bool left2right, int precedence, const char * var) {
+    add_op(parser, &parser->binary_table, op, precedence, var);
+}
+
+void parser_add_var(parser_t * parser, const char * var) {
+    string_t var_name;
+    string_init(&var_name, (uint8_t *) var, (int) strlen(var));
+    define_var(parser, &var_name, NULL);
+}
+
+static inline void parser_enter_scope(parser_t * parser) {
+    var_table_enter(&parser->var_table);
+    operator_table_enter(&parser->prefix_table);
+    operator_table_enter(&parser->postfix_table);
+    operator_table_enter(&parser->binary_table);
+}
+
+static inline void parser_exit_scope(parser_t * parser) {
+    var_table_exit(&parser->var_table);
+    operator_table_exit(&parser->prefix_table);
+    operator_table_exit(&parser->postfix_table);
+    operator_table_exit(&parser->binary_table);
+}
+
+void parser_init(parser_t * parser) {
+    var_table_init(&parser->var_table, SYMBOL_TABLE_INITIAL_CAPACITY);
+    operator_table_init(&parser->prefix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
+    operator_table_init(&parser->postfix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
+    operator_table_init(&parser->binary_table, SYMBOL_TABLE_INITIAL_CAPACITY);
+
+    parser_add_var(parser, "__ne");
+    parser_add_binary(parser, "!=", true, 5, "__ne");
+
+    parser_add_var(parser, "__eq");
+    parser_add_binary(parser, "==", true, 5, "__eq");
+
+    parser_add_var(parser, "__or");
+    parser_add_binary(parser, "||", true, 5, "__or");
+
+    parser_add_var(parser, "__lt");
+    parser_add_binary(parser, "<", true, 5, "__lt");
+
+    parser_add_var(parser, "__ge");
+    parser_add_binary(parser, ">=", true, 5, "__ge");
+
+    parser_add_var(parser, "__re");
+    parser_add_binary(parser, "%", true, 5, "__re");
+
+    parser_add_var(parser, "__add");
+    parser_add_binary(parser, "+", true, 5, "__add");
+
+    parser_add_var(parser, "__sub");
+    parser_add_binary(parser, "-", true, 5, "__sub");
+
+    parser_add_var(parser, "__mul");
+    parser_add_binary(parser, "*", true, 4, "__mul");
+
+    parser_add_var(parser, "__neg");
+    parser_add_prefix(parser, "-", 2, "__neg");
+
+    parser_add_var(parser, "printf");
+    parser_add_var(parser, "printfn");
+    parser_add_var(parser, "if");
+    parser_add_var(parser, "rand");
+}
+
+void parser_destroy(parser_t * parser) {
+    var_table_destroy(&parser->var_table);
+    operator_table_destroy(&parser->prefix_table);
+    operator_table_destroy(&parser->postfix_table);
+    operator_table_destroy(&parser->binary_table);
+}
 
 // Basic
 ast_id_t * make_id(string_t * value) {
@@ -123,11 +242,20 @@ ast_fun_apply_t * make_fun_apply(ast_expr_t * function, ast_expr_list_t * operan
     return fun_apply;
 }
 
-ast_ref_t * make_ref(ast_expr_t * base, ast_cid_t * cid) {
+ast_ref_t * make_ref(int level, int index, string_t * name) {
     ast_ref_t * ref = new_data(ast_ref_t);
     ref->super.super.type = AST_REF;
+    ref->level = level;
+    ref->index = index;
+    ref->name = string_dup(name);
+    return ref;
+}
+
+ast_struct_ref_t * make_struct_ref(ast_expr_t * base, ast_id_t * id) {
+    ast_struct_ref_t * ref = new_data(ast_struct_ref_t);
+    ref->super.super.type = AST_STRUCT_REF;
     ref->base = base;
-    ref->cid = cid;
+    ref->id = id;
     return ref;
 }
 
@@ -187,7 +315,7 @@ ast_var_declare_list_t * parse_var_declare_list(token_stream_t * stream) {
     }
 }
 
-ast_struct_t * parse_struct(token_stream_t * stream) {
+ast_struct_t * parse_struct(parser_t * parser, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_STRUCT, stream);
 
     ast_id_t * id = parse_id(stream);
@@ -202,7 +330,7 @@ ast_struct_t * parse_struct(token_stream_t * stream) {
         token_stream_poll(stream);
         parent = parse_cid(stream);
     }
-
+    define_var(parser, id->name, stream);
     return make_struct(id, members, parent);
 }
 
@@ -213,6 +341,7 @@ ast_let_t * parse_let(parser_t * parser, token_stream_t * stream) {
     require(var != NULL, "Need id", stream);
 
     require_id(token_stream_poll(stream), "=", stream);
+    define_var(parser, var->id->name, stream);
 
     ast_expr_t * expr = parse_expr(parser, stream);
     require(expr != NULL, "Need expr", stream);
@@ -231,7 +360,7 @@ ast_statement_t * parse_statement(parser_t * parser, token_stream_t * stream) {
         case TOKEN_IMPORT:
             return &parse_import(stream)->super;
         case TOKEN_STRUCT:
-            return &parse_struct(stream)->super;
+            return &parse_struct(parser, stream)->super;
         case TOKEN_LET:
             return &parse_let(parser, stream)->super;
         default:
@@ -249,6 +378,12 @@ ast_fun_t * parse_fun(parser_t * parser, token_stream_t * stream) {
     ast_var_declare_list_t * params = parse_var_declare_list(stream);
     require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
 
+    parser_enter_scope(parser);
+    // Add parameter into scope.
+    for (ast_var_declare_list_t * head = params; head != NULL; head = head->next) {
+        define_var(parser, head->var->id->name, stream);
+    }
+
     ast_cid_t * return_type = NULL;
     if (token_stream_peek(stream)->type == TOKEN_COLON) {
         token_stream_poll(stream);
@@ -256,8 +391,9 @@ ast_fun_t * parse_fun(parser_t * parser, token_stream_t * stream) {
     }
 
     ast_expr_t * body = parse_expr(parser, stream);
-    require(body != NULL, "Need body", stream);
+    parser_exit_scope(parser);
 
+    require(body != NULL, "Need body", stream);
     return make_fun(params, return_type, body);
 }
 
@@ -342,16 +478,21 @@ ast_fun_apply_t * parse_fun_apply(parser_t * parser, ast_expr_t * function, toke
     return make_fun_apply(function, operands);
 }
 
-ast_ref_t * parse_ref(ast_expr_t * base, token_stream_t * stream) {
-    if (base != NULL) {
-        require_token(token_stream_poll(stream), TOKEN_PERIOD, stream);
-    }
-    ast_cid_t * cid = parse_cid(stream);
-    if (cid == NULL) {
-        require(base == NULL, "Need cid", stream);
+ast_ref_t * parse_ref(parser_t * parser, token_stream_t * stream) {
+    token_t * token = token_stream_peek(stream);
+    if (token->type != TOKEN_ID) {
         return NULL;
     }
-    return make_ref(base, cid);
+    var_def_t *def = get_var(parser, &token->value, stream);
+    token_stream_poll(stream);
+    return make_ref(def->level, def->index, def->name);
+}
+
+ast_struct_ref_t * parse_struct_ref(ast_expr_t * base, token_stream_t * stream) {
+    require_token(token_stream_poll(stream), TOKEN_PERIOD, stream);
+    ast_id_t * id = parse_id(stream);
+    require(id != NULL, "Need id", stream);
+    return make_struct_ref(base, id);
 }
 
 ast_expr_t * parse_term(parser_t * parser, token_stream_t * stream) {
@@ -368,7 +509,7 @@ ast_expr_t * parse_term(parser_t * parser, token_stream_t * stream) {
         case TOKEN_LONG:
             return &parse_long(stream)->super;
         case TOKEN_ID:
-            return &parse_ref(NULL, stream)->super;
+            return &parse_ref(parser, stream)->super;
         default:
             return NULL;
     }
@@ -387,7 +528,7 @@ ast_expr_t * parse_primary(parser_t * parser, token_stream_t * stream) {
                     new_left = &parse_fun_apply(parser, left, stream)->super;
                     break;
                 case TOKEN_PERIOD:
-                    new_left = &parse_ref(left, stream)->super;
+                    new_left = &parse_struct_ref(left, stream)->super;
                     break;
                 default:
                     break;
@@ -430,7 +571,7 @@ static inline ast_expr_t * build_unary_apply(operator_def_t * op, ast_expr_t * o
     if (op == NULL) {
         return operand;
     } else {
-        return &make_fun_apply(&make_ref(NULL, make_cid(make_id(&op->name), NULL))->super, make_expr_list(operand, NULL))->super;
+        return &make_fun_apply(&make_ref(op->var->level, op->var->index, op->var->name)->super, make_expr_list(operand, NULL))->super;
     }
 }
 
@@ -478,7 +619,7 @@ static inline ast_expr_t * build_binary_apply(operator_def_t * op, ast_expr_t * 
         ensure(left == NULL);
         return right;
     } else {
-        return &make_fun_apply(&make_ref(NULL, make_cid(make_id(&op->name), NULL))->super,
+        return &make_fun_apply(&make_ref(op->var->level, op->var->index, op->var->name)->super,
                                make_expr_list(left, make_expr_list(right, NULL)))->super;
     }
 }
@@ -517,44 +658,3 @@ ast_expr_t * parse_expr(parser_t * parser, token_stream_t * stream) {
     return parse_binary(parser, stream);
 }
 
-void parser_add_prefix(parser_t * parser, const char * name, int precedence) {
-    string_t s;
-    string_init(&s, (uint8_t *) name, (int) strlen(name));
-    operator_table_add(&parser->prefix_table, &s, true, precedence);
-}
-
-void parser_add_postfix(parser_t * parser, const char * name, int precedence) {
-    string_t s;
-    string_init(&s, (uint8_t *) name, (int) strlen(name));
-    operator_table_add(&parser->postfix_table, &s, false, precedence);
-}
-
-void parser_add_binary(parser_t * parser, const char * name, bool left2right, int precedence) {
-    string_t s;
-    string_init(&s, (uint8_t *) name, (int) strlen(name));
-    operator_table_add(&parser->binary_table, &s, left2right, precedence);
-}
-
-void parser_init(parser_t * parser) {
-    var_table_init(&parser->var_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-    operator_table_init(&parser->prefix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-    operator_table_init(&parser->postfix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-    operator_table_init(&parser->binary_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-
-    parser_add_binary(parser, "!=", true, 5);
-    parser_add_binary(parser, "==", true, 5);
-    parser_add_binary(parser, "||", true, 5);
-    parser_add_binary(parser, "<", true, 5);
-    parser_add_binary(parser, ">=", true, 5);
-    parser_add_binary(parser, "%", true, 5);
-    parser_add_binary(parser, "+", true, 5);
-    parser_add_binary(parser, "-", true, 5);
-    parser_add_binary(parser, "*", true, 4);
-    parser_add_prefix(parser, "-", 2);
-}
-
-void parser_destroy(parser_t * parser) {
-    operator_table_destroy(&parser->prefix_table);
-    operator_table_destroy(&parser->postfix_table);
-    operator_table_destroy(&parser->binary_table);
-}

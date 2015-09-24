@@ -132,11 +132,19 @@ static void print_fun_apply(int level, ast_fun_apply_t * fun_apply) {
 }
 
 static void print_ref(int level, ast_ref_t * ref) {
-    print_indent(level, "ref");
-    print_cid(level+1, ref->cid);
+    SBUILDER(builder, 1024);
+    sbuilder_format(&builder, "ref(%d, %d, ", ref->level, ref->index);
+    sbuilder_string(&builder, ref->name);
+    sbuilder_str(&builder, ")");
+    print_indent(level, builder.buf);
+}
+
+static void print_struct_ref(int level, ast_struct_ref_t * ref) {
+    print_indent(level, "struct_ref");
     if (ref->base != NULL) {
         print_statement(level+1, &ref->base->super);
     }
+    print_id(level+1, ref->id);
 }
 
 static void print_str(int level, ast_str_t * str) {
