@@ -8,6 +8,8 @@
 #include "utils.h"
 #include "operator_table.h"
 #include "var_table.h"
+#include "ast.h"
+#include "type.h"
 
 #define SYMBOL_TABLE_INITIAL_CAPACITY 4096
 
@@ -81,6 +83,7 @@ static inline void parser_exit_scope(parser_t * parser) {
 
 void parser_init(parser_t * parser) {
     var_table_init(&parser->var_table, SYMBOL_TABLE_INITIAL_CAPACITY);
+    type_table_init(&parser->type_table, SYMBOL_TABLE_INITIAL_CAPACITY);
     operator_table_init(&parser->prefix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
     operator_table_init(&parser->postfix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
     operator_table_init(&parser->binary_table, SYMBOL_TABLE_INITIAL_CAPACITY);
@@ -123,6 +126,7 @@ void parser_init(parser_t * parser) {
 
 void parser_destroy(parser_t * parser) {
     var_table_destroy(&parser->var_table);
+    type_table_destroy(&parser->type_table);
     operator_table_destroy(&parser->prefix_table);
     operator_table_destroy(&parser->postfix_table);
     operator_table_destroy(&parser->binary_table);
@@ -178,12 +182,17 @@ ast_import_t * make_import(ast_cid_t * module) {
     return import;
 }
 
-ast_struct_t * make_struct(ast_id_t * id, ast_var_declare_list_t * members, ast_cid_t * parent) {
+type_struct_t * make_type_struct(string_t * name) {
+    type_struct_t * s = new_data(type_struct_t);
+    s->super.category = TC_STRUCT;
+    s->super.name = string_dup(name);
+    return s;
+}
+
+ast_struct_t * make_struct(type_struct_t * type) {
     ast_struct_t * s = new_data(ast_struct_t);
     s->super.type = AST_STRUCT;
-    s->id = id;
-    s->members = members;
-    s->parent = parent;
+    s->type = type;
     return s;
 }
 
@@ -316,11 +325,29 @@ ast_var_declare_list_t * parse_var_declare_list(token_stream_t * stream) {
     }
 }
 
+type_t * parse_type(parser_t * parser, token_stream_t * stream) {
+    token_t * token = token_stream_peek(stream);
+    if (token->type != TOKEN_ID) {
+        return NULL;
+    }
+    type_t * type = type_table_get(&parser->type_table, &token->value);
+    if (type == NULL) {
+        return NULL;
+    }
+    token_stream_poll(stream);
+    return type;
+}
+
+type_list_t * parse_type_list(parser_t * parser, token_stream_t * stream) {
+
+}
+
 ast_struct_t * parse_struct(parser_t * parser, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_STRUCT, stream);
 
-    ast_id_t * id = parse_id(stream);
-    require(id != NULL, "Need id!", stream);
+    token_t * id = token_stream_poll(stream);
+    require_token(id, TOKEN_ID, stream);
+    type_struct_t * type = make_type_struct(&id->value);
 
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
     ast_var_declare_list_t * members = parse_var_declare_list(stream);

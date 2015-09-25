@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <utils/string.h>
+#include "type.h"
 
 typedef enum {
 #define AST_DEF(a, b, c, d) a,
@@ -25,16 +26,6 @@ typedef struct ast_cid_s {
 } ast_cid_t;
 
 typedef struct {
-    ast_id_t * id;
-    ast_cid_t * type;
-} ast_var_declare_t;
-
-typedef struct ast_var_declare_list_s {
-    ast_var_declare_t * var;
-    struct ast_var_declare_list_s * next;
-} ast_var_declare_list_t;
-
-typedef struct {
     ast_type_t type;
 } ast_statement_t;
 
@@ -45,6 +36,7 @@ typedef struct ast_statement_list_s {
 
 typedef struct {
     ast_statement_t super;
+    type_t * type;
 } ast_expr_t;
 
 typedef struct ast_expr_list_s {
@@ -63,20 +55,19 @@ DEFINE_STATEMENT(ast_import_t,
 )
 
 DEFINE_STATEMENT(ast_struct_t,
-    ast_id_t * id;
-    ast_var_declare_list_t * members;
-    ast_cid_t * parent;
+    type_struct_t * type;
 )
 
 DEFINE_STATEMENT(ast_let_t,
-    ast_var_declare_t * var;
+    var_declare_t * var;
     ast_expr_t * expr;
 )
 
 DEFINE_EXPR(ast_fun_t,
     int param_num;
     ast_var_declare_list_t * params;
-    ast_cid_t * return_type;
+    type_fun_t * type;
+            ast_cid_t * return_type;
     ast_expr_t * body;
 )
 

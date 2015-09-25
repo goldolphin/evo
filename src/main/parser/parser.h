@@ -10,9 +10,11 @@
 #include "token_stream.h"
 #include "operator_table.h"
 #include "var_table.h"
+#include "type_table.h"
 
 typedef struct parser_s {
     var_table_t var_table;
+    type_table_t type_table;
     operator_table_t prefix_table;
     operator_table_t postfix_table;
     operator_table_t binary_table;
