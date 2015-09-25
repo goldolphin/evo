@@ -74,6 +74,7 @@ DEFINE_STATEMENT(ast_let_t,
 )
 
 DEFINE_EXPR(ast_fun_t,
+    int param_num;
     ast_var_declare_list_t * params;
     ast_cid_t * return_type;
     ast_expr_t * body;

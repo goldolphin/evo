@@ -196,9 +196,10 @@ ast_let_t * make_let(ast_var_declare_t * var, ast_expr_t * expr) {
 }
 
 // Expr
-ast_fun_t * make_fun(ast_var_declare_list_t * params, ast_cid_t * return_type, ast_expr_t * body) {
+ast_fun_t * make_fun(int param_num, ast_var_declare_list_t * params, ast_cid_t * return_type, ast_expr_t * body) {
     ast_fun_t * fun = new_data(ast_fun_t);
     fun->super.super.type = AST_FUN;
+    fun->param_num = param_num;
     fun->params = params;
     fun->return_type = return_type;
     fun->body = body;
@@ -380,8 +381,10 @@ ast_fun_t * parse_fun(parser_t * parser, token_stream_t * stream) {
 
     parser_enter_scope(parser);
     // Add parameter into scope.
+    int param_num = 0;
     for (ast_var_declare_list_t * head = params; head != NULL; head = head->next) {
         define_var(parser, head->var->id->name, stream);
+        ++ param_num;
     }
 
     ast_cid_t * return_type = NULL;
@@ -394,7 +397,7 @@ ast_fun_t * parse_fun(parser_t * parser, token_stream_t * stream) {
     parser_exit_scope(parser);
 
     require(body != NULL, "Need body", stream);
-    return make_fun(params, return_type, body);
+    return make_fun(param_num, params, return_type, body);
 }
 
 static bool parse_block_rec(parser_t * parser, token_stream_t * stream, ast_statement_list_t ** p_statements, ast_expr_t ** p_the_last) {

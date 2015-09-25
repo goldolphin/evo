@@ -113,7 +113,9 @@ static void print_let(int level, ast_let_t * let) {
 }
 
 static void print_fun(int level, ast_fun_t * fun) {
-    print_indent(level, "fun");
+    SBUILDER(builder, 1024);
+    sbuilder_format(&builder, "fun(%d)", fun->param_num);
+    print_indent(level, builder.buf);
     print_var_declare_list(level+1, fun->params);
     print_cid(level+1, fun->return_type);
     print_statement(level+1, &fun->body->super);
