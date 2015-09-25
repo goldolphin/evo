@@ -16,7 +16,7 @@ target_link_libraries(lexer utils)
 
 add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h src/main/parser/token_stream.c src/main/parser/token_stream.h
         src/main/parser/ast.c src/main/parser/ast.h src/main/parser/ast_define.def src/main/parser/utils.h src/main/parser/symbol_table.c src/main/parser/symbol_table.h
-        src/main/parser/operator_table.c src/main/parser/operator_table.h src/main/parser/var_table.c src/main/parser/var_table.h)
+        src/main/parser/operator_table.c src/main/parser/operator_table.h src/main/parser/var_table.c src/main/parser/var_table.h src/main/parser/type_table.c src/main/parser/type_table.h src/main/parser/type.c src/main/parser/type.h)
 target_link_libraries(parser lexer)
 
 add_library(interpreter STATIC src/main/interpreter/environment.c src/main/interpreter/environment.h)
