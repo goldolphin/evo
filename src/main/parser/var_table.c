@@ -26,7 +26,7 @@ void var_table_destroy(var_table_t * table) {
     symbol_table_destroy(&table->super);
 }
 
-bool var_table_add(var_table_t *table, string_t * name) {
+bool var_table_add(var_table_t *table, string_t * name, type_t * type) {
     symbol_list_t *node = symbol_table_add(&table->super, name);
     if (node == NULL) {
         return false;
@@ -34,6 +34,7 @@ bool var_table_add(var_table_t *table, string_t * name) {
     var_list_t *var_node = container_of(node, var_list_t, super);
     var_node->def.level = node->level;
     var_node->def.index = node->index;
+    var_node->def.type = type;
     var_node->def.name = node->name;
     return true;
 }

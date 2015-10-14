@@ -5,6 +5,7 @@
 
 #include <utils/memory.h>
 #include "ast.h"
+#include "type.h"
 
 static bool sbuilder_id(sbuilder_t * builder, ast_id_t * id) {
     if (id == NULL) {
@@ -28,13 +29,17 @@ static bool sbuilder_cid(sbuilder_t * builder, ast_cid_t * cid) {
     }
 }
 
-static bool sbuilder_var_declare(sbuilder_t * builder, ast_var_declare_t * var_declare) {
-    sbuilder_id(builder, var_declare->id);
-    sbuilder_str(builder, ":");
-    return sbuilder_cid(builder, var_declare->type);
+static bool sbuilder_type(sbuilder_t * builder, type_t * type) {
+    return sbuilder_string(builder, type->name);
 }
 
-static bool sbuilder_var_declare_list(sbuilder_t * builder, ast_var_declare_list_t * var_declare_list) {
+static bool sbuilder_var_declare(sbuilder_t * builder, var_declare_t * var_declare) {
+    sbuilder_string(builder, var_declare->name);
+    sbuilder_str(builder, ":");
+    return sbuilder_type(builder, var_declare->type);
+}
+
+static bool sbuilder_var_declare_list(sbuilder_t * builder, var_declare_list_t * var_declare_list) {
     if (var_declare_list == NULL) {
         return sbuilder_str(builder, "NULL");
     }
@@ -54,6 +59,12 @@ static void print_indent(int level, const char * str) {
     puts(str);
 }
 
+static void print_string(int level, string_t * str) {
+    SBUILDER(builder, 1024);
+    sbuilder_string(&builder, str);
+    print_indent(level, builder.buf);
+}
+
 static void print_id(int level, ast_id_t * id) {
     SBUILDER(builder, 1024);
     sbuilder_id(&builder, id);
@@ -66,13 +77,13 @@ static void print_cid(int level, ast_cid_t * cid) {
     print_indent(level, builder.buf);
 }
 
-static void print_var_declare(int level, ast_var_declare_t * var_declare) {
+static void print_var_declare(int level, var_declare_t * var_declare) {
     SBUILDER(builder, 1024);
     sbuilder_var_declare(&builder, var_declare);
     print_indent(level, builder.buf);
 }
 
-static void print_var_declare_list(int level, ast_var_declare_list_t * var_declare_list) {
+static void print_var_declare_list(int level, var_declare_list_t * var_declare_list) {
     SBUILDER(builder, 1024);
     sbuilder_var_declare_list(&builder, var_declare_list);
     print_indent(level, builder.buf);
@@ -101,9 +112,13 @@ static void print_import(int level, ast_import_t * import) {
 
 static void print_struct(int level, ast_struct_t * s) {
     print_indent(level, "struct");
-    print_id(level+1, s->id);
-    print_var_declare_list(level+1, s->members);
-    print_cid(level+1, s->parent);
+    print_string(level+1, s->type->super.name);
+    print_var_declare_list(level+1, s->type->members);
+    if (s->type->parent == NULL) {
+        print_indent(level+1, "NULL");
+    } else {
+        print_string(level+1, s->type->parent->super.name);
+    }
 }
 
 static void print_let(int level, ast_let_t * let) {
@@ -142,11 +157,12 @@ static void print_ref(int level, ast_ref_t * ref) {
 }
 
 static void print_struct_ref(int level, ast_struct_ref_t * ref) {
-    print_indent(level, "struct_ref");
-    if (ref->base != NULL) {
-        print_statement(level+1, &ref->base->super);
-    }
-    print_id(level+1, ref->id);
+    SBUILDER(builder, 1024);
+    sbuilder_format(&builder, "struct_ref(%d, ", ref->index);
+    sbuilder_string(&builder, ref->name);
+    sbuilder_str(&builder, ")");
+    print_indent(level, builder.buf);
+    print_statement(level+1, &ref->base->super);
 }
 
 static void print_str(int level, ast_str_t * str) {

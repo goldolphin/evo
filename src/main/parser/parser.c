@@ -26,8 +26,8 @@ static inline var_def_t * parser_get_var(const char * func_name, parser_t * pars
     return def;
 }
 
-static inline void parser_define_var(const char * func_name, parser_t * parser, string_t * name, token_stream_t * stream) {
-    if (!var_table_add(&parser->var_table, name)) {
+static inline void parser_define_var(const char * func_name, parser_t * parser, string_t * name, type_t * type, token_stream_t * stream) {
+    if (!var_table_add(&parser->var_table, name, type)) {
         SBUILDER(builder, 1024);
         sbuilder_str(&builder, "Duplicate definition of name: ");
         sbuilder_string(&builder, name);
@@ -36,8 +36,30 @@ static inline void parser_define_var(const char * func_name, parser_t * parser, 
 }
 #define get_var(parser, name, stream) parser_get_var(__FUNCTION__, parser, name, stream)
 
-#define define_var(parser, name, stream) parser_define_var(__FUNCTION__, parser, name, stream)
+#define define_var(parser, name, type, stream) parser_define_var(__FUNCTION__, parser, name, type, stream)
 
+static inline type_t * parser_get_type(const char * func_name, parser_t * parser, string_t * name, token_stream_t * stream) {
+    type_t *type = type_table_get(&parser->type_table, name);
+    if (type == NULL) {
+        SBUILDER(builder, 1024);
+        sbuilder_str(&builder, "Undefined type: ");
+        sbuilder_string(&builder, name);
+        parser_require(func_name, false, builder.buf, stream);
+    }
+    return type;
+}
+
+static inline void parser_define_type(const char * func_name, parser_t * parser, type_t * type, token_stream_t * stream) {
+    if (!type_table_add(&parser->type_table, type->name, type)) {
+        SBUILDER(builder, 1024);
+        sbuilder_str(&builder, "Duplicate definition of type: ");
+        sbuilder_string(&builder, type->name);
+        parser_require(func_name, false, builder.buf, stream);
+    }
+}
+#define get_type(parser, name, stream) parser_get_type(__FUNCTION__, parser, name, stream)
+
+#define define_type(parser, type, stream) parser_define_type(__FUNCTION__, parser, type, stream)
 
 static inline void add_op(parser_t * parser, operator_table_t * table, const char * op, int precedence, const char * var) {
     string_t var_name;
@@ -61,14 +83,19 @@ void parser_add_binary(parser_t * parser, const char * op, bool left2right, int 
     add_op(parser, &parser->binary_table, op, precedence, var);
 }
 
-void parser_add_var(parser_t * parser, const char * var) {
+void parser_add_var(parser_t * parser, const char * var, type_t * type) {
     string_t var_name;
     string_init(&var_name, (uint8_t *) var, (int) strlen(var));
-    define_var(parser, &var_name, NULL);
+    define_var(parser, &var_name, type, NULL);
+}
+
+void parser_add_type(parser_t * parser, type_t * type) {
+    define_type(parser, type, NULL);
 }
 
 static inline void parser_enter_scope(parser_t * parser) {
     var_table_enter(&parser->var_table);
+    type_table_enter(&parser->type_table);
     operator_table_enter(&parser->prefix_table);
     operator_table_enter(&parser->postfix_table);
     operator_table_enter(&parser->binary_table);
@@ -76,6 +103,7 @@ static inline void parser_enter_scope(parser_t * parser) {
 
 static inline void parser_exit_scope(parser_t * parser) {
     var_table_exit(&parser->var_table);
+    type_table_exit(&parser->type_table);
     operator_table_exit(&parser->prefix_table);
     operator_table_exit(&parser->postfix_table);
     operator_table_exit(&parser->binary_table);
@@ -88,40 +116,47 @@ void parser_init(parser_t * parser) {
     operator_table_init(&parser->postfix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
     operator_table_init(&parser->binary_table, SYMBOL_TABLE_INITIAL_CAPACITY);
 
-    parser_add_var(parser, "__ne");
+    parser_add_var(parser, "__ne", FUN_TYPE);
     parser_add_binary(parser, "!=", true, 5, "__ne");
 
-    parser_add_var(parser, "__eq");
+    parser_add_var(parser, "__eq", FUN_TYPE);
     parser_add_binary(parser, "==", true, 5, "__eq");
 
-    parser_add_var(parser, "__or");
+    parser_add_var(parser, "__or", FUN_TYPE);
     parser_add_binary(parser, "||", true, 5, "__or");
 
-    parser_add_var(parser, "__lt");
+    parser_add_var(parser, "__lt", FUN_TYPE);
     parser_add_binary(parser, "<", true, 5, "__lt");
 
-    parser_add_var(parser, "__ge");
+    parser_add_var(parser, "__ge", FUN_TYPE);
     parser_add_binary(parser, ">=", true, 5, "__ge");
 
-    parser_add_var(parser, "__re");
+    parser_add_var(parser, "__re", FUN_TYPE);
     parser_add_binary(parser, "%", true, 5, "__re");
 
-    parser_add_var(parser, "__add");
+    parser_add_var(parser, "__add", FUN_TYPE);
     parser_add_binary(parser, "+", true, 5, "__add");
 
-    parser_add_var(parser, "__sub");
+    parser_add_var(parser, "__sub", FUN_TYPE);
     parser_add_binary(parser, "-", true, 5, "__sub");
 
-    parser_add_var(parser, "__mul");
+    parser_add_var(parser, "__mul", FUN_TYPE);
     parser_add_binary(parser, "*", true, 4, "__mul");
 
-    parser_add_var(parser, "__neg");
+    parser_add_var(parser, "__neg", FUN_TYPE);
     parser_add_prefix(parser, "-", 2, "__neg");
 
-    parser_add_var(parser, "printf");
-    parser_add_var(parser, "printfn");
-    parser_add_var(parser, "if");
-    parser_add_var(parser, "rand");
+    parser_add_var(parser, "printf", FUN_TYPE);
+    parser_add_var(parser, "printfn", FUN_TYPE);
+    parser_add_var(parser, "if", FUN_TYPE);
+    parser_add_var(parser, "rand", FUN_TYPE);
+
+    parser_add_type(parser, BOOL_TYPE);
+    parser_add_type(parser, INT_TYPE);
+    parser_add_type(parser, LONG_TYPE);
+    parser_add_type(parser, DOUBLE_TYPE);
+    parser_add_type(parser, FUN_TYPE);
+    parser_add_type(parser, STRING_TYPE);
 }
 
 void parser_destroy(parser_t * parser) {
@@ -146,15 +181,15 @@ ast_cid_t * make_cid(ast_id_t * id, ast_cid_t * parent) {
     return cid;
 }
 
-ast_var_declare_t * make_var_declare(ast_id_t * id, ast_cid_t * type) {
-    ast_var_declare_t * var_declare = new_data(ast_var_declare_t);
-    var_declare->id = id;
+var_declare_t * make_var_declare(string_t * name, type_t * type) {
+    var_declare_t * var_declare = new_data(var_declare_t);
+    var_declare->name = name;
     var_declare->type = type;
     return var_declare;
 }
 
-ast_var_declare_list_t * make_var_declare_list(ast_var_declare_t * var, ast_var_declare_list_t * next) {
-    ast_var_declare_list_t * var_declare_list = new_data(ast_var_declare_list_t);
+var_declare_list_t * make_var_declare_list(var_declare_t * var, var_declare_list_t * next) {
+    var_declare_list_t * var_declare_list = new_data(var_declare_list_t);
     var_declare_list->var = var;
     var_declare_list->next = next;
     return var_declare_list;
@@ -182,10 +217,12 @@ ast_import_t * make_import(ast_cid_t * module) {
     return import;
 }
 
-type_struct_t * make_type_struct(string_t * name) {
+type_struct_t * make_type_struct(string_t * name, var_declare_list_t * members, type_struct_t * parent) {
     type_struct_t * s = new_data(type_struct_t);
     s->super.category = TC_STRUCT;
     s->super.name = string_dup(name);
+    s->members = members;
+    s->parent = parent;
     return s;
 }
 
@@ -196,7 +233,7 @@ ast_struct_t * make_struct(type_struct_t * type) {
     return s;
 }
 
-ast_let_t * make_let(ast_var_declare_t * var, ast_expr_t * expr) {
+ast_let_t * make_let(var_declare_t * var, ast_expr_t * expr) {
     ast_let_t * let = new_data(ast_let_t);
     let->super.type = AST_LET;
     let->var = var;
@@ -205,9 +242,14 @@ ast_let_t * make_let(ast_var_declare_t * var, ast_expr_t * expr) {
 }
 
 // Expr
-ast_fun_t * make_fun(int param_num, ast_var_declare_list_t * params, ast_cid_t * return_type, ast_expr_t * body) {
+void expr_init(ast_expr_t * expr, ast_type_t ast_type, type_t * type) {
+    expr->super.type = ast_type;
+    expr->type = type;
+}
+
+ast_fun_t * make_fun(int param_num, var_declare_list_t * params, ast_cid_t * return_type, ast_expr_t * body) {
     ast_fun_t * fun = new_data(ast_fun_t);
-    fun->super.super.type = AST_FUN;
+    expr_init(&fun->super, AST_FUN, FUN_TYPE);
     fun->param_num = param_num;
     fun->params = params;
     fun->return_type = return_type;
@@ -217,7 +259,7 @@ ast_fun_t * make_fun(int param_num, ast_var_declare_list_t * params, ast_cid_t *
 
 ast_block_t * make_block(ast_statement_list_t * statements, ast_expr_t * the_last) {
     ast_block_t * block = new_data(ast_block_t);
-    block->super.super.type = AST_BLOCK;
+    expr_init(&block->super, AST_BLOCK, the_last->type);
     block->statements = statements;
     block->the_last = the_last;
     return block;
@@ -225,47 +267,48 @@ ast_block_t * make_block(ast_statement_list_t * statements, ast_expr_t * the_las
 
 ast_str_t * make_str(string_t * value) {
     ast_str_t * str = new_data(ast_str_t);
-    str->super.super.type = AST_STR;
+    expr_init(&str->super, AST_STR, STRING_TYPE);
     str->value = string_dup(value);
     return str;
 }
 
 ast_double_t * make_double(double value) {
     ast_double_t * d = new_data(ast_double_t);
-    d->super.super.type = AST_DOUBLE;
+    expr_init(&d->super, AST_DOUBLE, DOUBLE_TYPE);
     d->value = value;
     return d;
 }
 
 ast_long_t * make_long(long value) {
     ast_long_t * d = new_data(ast_long_t);
-    d->super.super.type = AST_LONG;
+    expr_init(&d->super, AST_LONG, LONG_TYPE);
     d->value = value;
     return d;
 }
 
 ast_fun_apply_t * make_fun_apply(ast_expr_t * function, ast_expr_list_t * operands) {
     ast_fun_apply_t * fun_apply = new_data(ast_fun_apply_t);
-    fun_apply->super.super.type = AST_FUN_APPLY;
+    expr_init(&fun_apply->super, AST_FUN_APPLY, NULL);
     fun_apply->function = function;
     fun_apply->operands = operands;
     return fun_apply;
 }
 
-ast_ref_t * make_ref(int level, int index, string_t * name) {
+ast_ref_t * make_ref(int level, int index, string_t * name, type_t * type) {
     ast_ref_t * ref = new_data(ast_ref_t);
-    ref->super.super.type = AST_REF;
+    expr_init(&ref->super, AST_REF, type);
     ref->level = level;
     ref->index = index;
     ref->name = string_dup(name);
     return ref;
 }
 
-ast_struct_ref_t * make_struct_ref(ast_expr_t * base, ast_id_t * id) {
+ast_struct_ref_t * make_struct_ref(ast_expr_t * base, int index, string_t * name, type_t * type) {
     ast_struct_ref_t * ref = new_data(ast_struct_ref_t);
-    ref->super.super.type = AST_STRUCT_REF;
+    expr_init(&ref->super, AST_STRUCT_REF, type);
     ref->base = base;
-    ref->id = id;
+    ref->index = index;
+    ref->name = name;
     return ref;
 }
 
@@ -300,76 +343,75 @@ ast_import_t * parse_import(token_stream_t * stream) {
     return make_import(module);
 }
 
-ast_var_declare_t * parse_var_declare(token_stream_t * stream) {
-    ast_id_t * id = parse_id(stream);
-    if (id == NULL) return NULL;
-    token_t * token = token_stream_peek(stream);
-    ast_cid_t * type = NULL;
-    if (token->type == TOKEN_COLON) {
-        token_stream_poll(stream);
-        type = parse_cid(stream);
-        require(type != NULL, "Need cid!", stream);
-    }
-    return make_var_declare(id, type);
-}
-
-ast_var_declare_list_t * parse_var_declare_list(token_stream_t * stream) {
-    ast_var_declare_t * var_declare = parse_var_declare(stream);
-    if (var_declare == NULL) return NULL;
-    token_t * token = token_stream_peek(stream);
-    if (token->type == TOKEN_COMMA) {
-        token_stream_poll(stream);
-        return make_var_declare_list(var_declare, parse_var_declare_list(stream));
-    } else {
-        return make_var_declare_list(var_declare, NULL);
-    }
-}
-
 type_t * parse_type(parser_t * parser, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
     if (token->type != TOKEN_ID) {
         return NULL;
     }
-    type_t * type = type_table_get(&parser->type_table, &token->value);
-    if (type == NULL) {
-        return NULL;
-    }
+    type_t * type = get_type(parser, &token->value, stream);
     token_stream_poll(stream);
     return type;
 }
 
-type_list_t * parse_type_list(parser_t * parser, token_stream_t * stream) {
+var_declare_t * parse_var_declare(parser_t * parser, token_stream_t * stream) {
+    token_t * token = token_stream_peek(stream);
+    if (token->type != TOKEN_ID) return NULL;
+    token_stream_poll(stream);
+    string_t * name = string_dup(&token->value);
 
+    type_t * type = NULL;
+    token = token_stream_peek(stream);
+    if (token->type == TOKEN_COLON) {
+        token_stream_poll(stream);
+        type = parse_type(parser, stream);
+    }
+    return make_var_declare(name, type);
+}
+
+var_declare_list_t * parse_var_declare_list(parser_t * parser, token_stream_t * stream) {
+    var_declare_t * var_declare = parse_var_declare(parser, stream);
+    if (var_declare == NULL) return NULL;
+    token_t * token = token_stream_peek(stream);
+    if (token->type == TOKEN_COMMA) {
+        token_stream_poll(stream);
+        return make_var_declare_list(var_declare, parse_var_declare_list(parser, stream));
+    } else {
+        return make_var_declare_list(var_declare, NULL);
+    }
 }
 
 ast_struct_t * parse_struct(parser_t * parser, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_STRUCT, stream);
 
-    token_t * id = token_stream_poll(stream);
-    require_token(id, TOKEN_ID, stream);
-    type_struct_t * type = make_type_struct(&id->value);
+    token_t * token = token_stream_poll(stream);
+    require_token(token, TOKEN_ID, stream);
+    string_t * name = string_dup(&token->value);
 
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
-    ast_var_declare_list_t * members = parse_var_declare_list(stream);
+    var_declare_list_t * members = parse_var_declare_list(parser, stream);
     require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
 
-    ast_cid_t * parent = NULL;
+    type_struct_t * parent = NULL;
     if (token_stream_peek(stream)->type == TOKEN_EXTENDS) {
         token_stream_poll(stream);
-        parent = parse_cid(stream);
+        type_t *t = parse_type(parser, stream);
+        require(t->category == TC_STRUCT, "Need struct type", stream);
+        parent = container_of(t, type_struct_t, super);
     }
-    define_var(parser, id->name, stream);
-    return make_struct(id, members, parent);
+    define_var(parser, name, FUN_TYPE, stream);
+    type_struct_t * type = make_type_struct(name, members, parent);
+    define_type(parser, &type->super, stream);
+    return make_struct(type);
 }
 
 ast_let_t * parse_let(parser_t * parser, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_LET, stream);
 
-    ast_var_declare_t * var = parse_var_declare(stream);
-    require(var != NULL, "Need id", stream);
+    var_declare_t * var = parse_var_declare(parser, stream);
+    require(var != NULL, "Need variable", stream);
 
     require_id(token_stream_poll(stream), "=", stream);
-    define_var(parser, var->id->name, stream);
+    define_var(parser, var->name, var->type, stream);
 
     ast_expr_t * expr = parse_expr(parser, stream);
     require(expr != NULL, "Need expr", stream);
@@ -403,14 +445,14 @@ ast_fun_t * parse_fun(parser_t * parser, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_FUN, stream);
 
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
-    ast_var_declare_list_t * params = parse_var_declare_list(stream);
+    var_declare_list_t * params = parse_var_declare_list(parser, stream);
     require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
 
     parser_enter_scope(parser);
     // Add parameter into scope.
     int param_num = 0;
-    for (ast_var_declare_list_t * head = params; head != NULL; head = head->next) {
-        define_var(parser, head->var->id->name, stream);
+    for (var_declare_list_t * head = params; head != NULL; head = head->next) {
+        define_var(parser, head->var->name, head->var->type, stream);
         ++ param_num;
     }
 
@@ -515,14 +557,22 @@ ast_ref_t * parse_ref(parser_t * parser, token_stream_t * stream) {
     }
     var_def_t *def = get_var(parser, &token->value, stream);
     token_stream_poll(stream);
-    return make_ref(def->level, def->index, def->name);
+    return make_ref(def->level, def->index, def->name, def->type);
 }
 
 ast_struct_ref_t * parse_struct_ref(ast_expr_t * base, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_PERIOD, stream);
-    ast_id_t * id = parse_id(stream);
-    require(id != NULL, "Need id", stream);
-    return make_struct_ref(base, id);
+    require(base->type->category == TC_STRUCT, "Need struct value", stream);
+    type_struct_t *s = container_of(base->type, type_struct_t, super);
+
+    token_t * token = token_stream_poll(stream);
+    require_token(token, TOKEN_ID, stream);
+    
+    int index;
+    var_declare_t *var = struct_member_index(s, &token->value, &index);
+    require(var != NULL, "Struct has no such member", stream);
+
+    return make_struct_ref(base, index, var->name, var->type);
 }
 
 ast_expr_t * parse_term(parser_t * parser, token_stream_t * stream) {
@@ -601,7 +651,7 @@ static inline ast_expr_t * build_unary_apply(operator_def_t * op, ast_expr_t * o
     if (op == NULL) {
         return operand;
     } else {
-        return &make_fun_apply(&make_ref(op->var->level, op->var->index, op->var->name)->super, make_expr_list(operand, NULL))->super;
+        return &make_fun_apply(&make_ref(op->var->level, op->var->index, op->var->name, FUN_TYPE)->super, make_expr_list(operand, NULL))->super;
     }
 }
 
@@ -649,7 +699,7 @@ static inline ast_expr_t * build_binary_apply(operator_def_t * op, ast_expr_t * 
         ensure(left == NULL);
         return right;
     } else {
-        return &make_fun_apply(&make_ref(op->var->level, op->var->index, op->var->name)->super,
+        return &make_fun_apply(&make_ref(op->var->level, op->var->index, op->var->name, FUN_TYPE)->super,
                                make_expr_list(left, make_expr_list(right, NULL)))->super;
     }
 }

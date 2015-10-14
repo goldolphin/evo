@@ -65,9 +65,8 @@ DEFINE_STATEMENT(ast_let_t,
 
 DEFINE_EXPR(ast_fun_t,
     int param_num;
-    ast_var_declare_list_t * params;
-    type_fun_t * type;
-            ast_cid_t * return_type;
+    var_declare_list_t * params;
+    ast_cid_t * return_type;
     ast_expr_t * body;
 )
 
@@ -89,7 +88,8 @@ DEFINE_EXPR(ast_ref_t,
 
 DEFINE_EXPR(ast_struct_ref_t,
     ast_expr_t * base;
-    ast_id_t * id;
+    int index;
+    string_t * name;
 )
 
 DEFINE_EXPR(ast_str_t,
