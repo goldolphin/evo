@@ -30,7 +30,11 @@ static bool sbuilder_cid(sbuilder_t * builder, ast_cid_t * cid) {
 }
 
 static bool sbuilder_type(sbuilder_t * builder, type_t * type) {
-    return sbuilder_string(builder, type->name);
+    if (type == NULL) {
+        return sbuilder_str(builder, "TYPE_NULL");
+    } else {
+        return sbuilder_string(builder, type->name);
+    }
 }
 
 static bool sbuilder_var_declare(sbuilder_t * builder, var_declare_t * var_declare) {

@@ -26,13 +26,27 @@ void type_table_destroy(type_table_t * table) {
     symbol_table_destroy(&table->super);
 }
 
-bool type_table_add(type_table_t *table, string_t * name, type_t * type) {
+void type_table_declare(type_table_t *table, string_t * name) {
     symbol_list_t *node = symbol_table_add(&table->super, name);
-    if (node == NULL) {
-        return false;
+    if (node != NULL) {
+        element_list_t *type_node = container_of(node, element_list_t, super);
+        type_node->type = HOLDER_TYPE;
     }
-    element_list_t *type_node = container_of(node, element_list_t, super);
-    type_node->type = type;
+}
+
+bool type_table_define(type_table_t *table, string_t * name, type_t * type) {
+    symbol_list_t *node = symbol_table_get(&table->super, name);
+    if (node == NULL) {
+        node = symbol_table_add(&table->super, name);
+        element_list_t *type_node = container_of(node, element_list_t, super);
+        type_node->type = type;
+    } else {
+        element_list_t *type_node = container_of(node, element_list_t, super);
+        if (type_node->type != HOLDER_TYPE) {
+            return false;
+        }
+        type_node->type = type;
+    }
     return true;
 }
 

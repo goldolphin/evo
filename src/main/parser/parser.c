@@ -49,15 +49,22 @@ static inline type_t * parser_get_type(const char * func_name, parser_t * parser
     return type;
 }
 
+static inline void parser_declare_type(const char * func_name, parser_t * parser, string_t * name, token_stream_t * stream) {
+    type_table_declare(&parser->type_table, name);
+}
+
 static inline void parser_define_type(const char * func_name, parser_t * parser, type_t * type, token_stream_t * stream) {
-    if (!type_table_add(&parser->type_table, type->name, type)) {
+    if (!type_table_define(&parser->type_table, type->name, type)) {
         SBUILDER(builder, 1024);
         sbuilder_str(&builder, "Duplicate definition of type: ");
         sbuilder_string(&builder, type->name);
         parser_require(func_name, false, builder.buf, stream);
     }
 }
+
 #define get_type(parser, name, stream) parser_get_type(__FUNCTION__, parser, name, stream)
+
+#define declare_type(parser, name, stream) parser_declare_type(__FUNCTION__, parser, name, stream)
 
 #define define_type(parser, type, stream) parser_define_type(__FUNCTION__, parser, type, stream)
 
@@ -386,6 +393,7 @@ ast_struct_t * parse_struct(parser_t * parser, token_stream_t * stream) {
     token_t * token = token_stream_poll(stream);
     require_token(token, TOKEN_ID, stream);
     string_t * name = string_dup(&token->value);
+    declare_type(parser, name, stream);
 
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
     var_declare_list_t * members = parse_var_declare_list(parser, stream);
@@ -399,6 +407,7 @@ ast_struct_t * parse_struct(parser_t * parser, token_stream_t * stream) {
         parent = container_of(t, type_struct_t, super);
     }
     define_var(parser, name, FUN_TYPE, stream);
+    define_var(parser, string_concat(name, "Null"), FUN_TYPE, stream);
     type_struct_t * type = make_type_struct(name, members, parent);
     define_type(parser, &type->super, stream);
     return make_struct(type);

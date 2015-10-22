@@ -6,9 +6,12 @@
 import IO
 import Random
 
-struct List()
-struct Cons(value: Int, tail: List) extends List
-let nil: List = List()
+struct List(value: Int, tail: List) // nullable
+let nil: List = ListNull()
+
+// struct List()
+// struct Cons(value: Int, tail: List) extends List
+// let nil: List = List()
 
 let print = fun(l: List): Unit (
     printf("list(")
@@ -24,7 +27,7 @@ let print = fun(l: List): Unit (
 )
 
 let cons = fun(value: Int, tail: List): List (
-    Cons(value, tail)
+    List(value, tail)
 )
 
 let reverse = fun(l: List): List (
