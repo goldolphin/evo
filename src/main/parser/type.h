@@ -10,6 +10,7 @@
 
 typedef enum {
     TC_HOLDER,
+    TC_UNIT,
     TC_BOOL,
     TC_INT,
     TC_LONG,
@@ -25,6 +26,7 @@ typedef struct {
 } type_t;
 
 extern type_t * HOLDER_TYPE;
+extern type_t * UNIT_TYPE;
 extern type_t * BOOL_TYPE;
 extern type_t * INT_TYPE;
 extern type_t * LONG_TYPE;

@@ -14,6 +14,8 @@ typedef struct {
     int len;
 } string_t;
 
+#define STRING_LITERAL(str) {(uint8_t *) str, sizeof(str)-1}
+
 void string_init(string_t *str, uint8_t *value, int len);
 
 bool string_equals_u(string_t * str, uint8_t *value, int len);

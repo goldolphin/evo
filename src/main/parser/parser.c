@@ -158,6 +158,7 @@ void parser_init(parser_t * parser) {
     parser_add_var(parser, "if", FUN_TYPE);
     parser_add_var(parser, "rand", FUN_TYPE);
 
+    parser_add_type(parser, UNIT_TYPE);
     parser_add_type(parser, BOOL_TYPE);
     parser_add_type(parser, INT_TYPE);
     parser_add_type(parser, LONG_TYPE);

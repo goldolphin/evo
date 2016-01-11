@@ -13,6 +13,10 @@ let nil: List = ListNull()
 // struct Cons(value: Int, tail: List) extends List
 // let nil: List = List()
 
+let cons = fun(value: Int, tail: List): List (
+    List(value, tail)
+)
+
 let print = fun(l: List): Unit (
     printf("list(")
     let loop = fun(head: List): Unit (
@@ -24,10 +28,6 @@ let print = fun(l: List): Unit (
     )
     loop(l)
     printfn(")")
-)
-
-let cons = fun(value: Int, tail: List): List (
-    List(value, tail)
 )
 
 let reverse = fun(l: List): List (
