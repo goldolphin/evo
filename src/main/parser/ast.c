@@ -189,8 +189,8 @@ static void print_long(int level, ast_long_t * d) {
     print_indent(level, builder.buf);
 }
 
-const char *ast_type_name(ast_type_t type) {
-    switch (type) {
+const char *ast_type_name(ast_category_t category) {
+    switch (category) {
 #define AST_DEF(a, b, c, d) case a: return #a;
 #include "ast_define.def"
 #undef AST_DEF
@@ -204,8 +204,8 @@ enum {
     EXPR,
 };
 
-bool ast_is_expr(ast_type_t type) {
-    switch (type) {
+bool ast_is_expr(ast_category_t category) {
+    switch (category) {
 #define AST_DEF(a, b, c, d) case a: return c == EXPR;
 #include "ast_define.def"
 #undef AST_DEF
@@ -218,7 +218,7 @@ static void print_expr(int level, ast_expr_t * expr) {
 }
 
 void print_statement(int level, ast_statement_t * statement) {
-    switch (statement->type) {
+    switch (statement->category) {
 #define AST_DEF(a, b, c, d) case a: print_##d(level, (void *)statement); break;
 #include "ast_define.def"
 #undef AST_DEF

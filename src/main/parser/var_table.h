@@ -10,10 +10,8 @@
 #include "type.h"
 
 typedef struct {
-    int level;
-    int index;
+    symbol_t super;
     type_t * type;
-    string_t * name;
 } var_def_t;
 
 typedef struct {

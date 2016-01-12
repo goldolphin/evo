@@ -10,6 +10,11 @@
 #include "type.h"
 
 typedef struct {
+    symbol_t super;
+    type_t * type;
+} type_def_t;
+
+typedef struct {
     symbol_table_t super;
 } type_table_t;
 
@@ -23,12 +28,13 @@ bool type_table_define(type_table_t *table, string_t * name, type_t * type);
 
 type_t * type_table_get(type_table_t *table, string_t * name);
 
-static inline void type_table_enter(type_table_t * table) {
-    symbol_table_enter(&table->super);
-}
-
-static inline void type_table_exit(type_table_t * table) {
-    symbol_table_exit(&table->super);
-}
+// type table should not have scopes.
+//static inline void type_table_enter(type_table_t * table) {
+//    symbol_table_enter(&table->super);
+//}
+//
+//static inline void type_table_exit(type_table_t * table) {
+//    symbol_table_exit(&table->super);
+//}
 
 #endif //EVO_TYPE_TABLE_H

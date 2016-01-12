@@ -10,7 +10,7 @@
 #include "var_table.h"
 
 typedef struct {
-    string_t name;
+    symbol_t super;
     bool left2right;
     int precedence;
     var_def_t * var;

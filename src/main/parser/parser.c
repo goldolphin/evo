@@ -102,7 +102,6 @@ void parser_add_type(parser_t * parser, type_t * type) {
 
 static inline void parser_enter_scope(parser_t * parser) {
     var_table_enter(&parser->var_table);
-    type_table_enter(&parser->type_table);
     operator_table_enter(&parser->prefix_table);
     operator_table_enter(&parser->postfix_table);
     operator_table_enter(&parser->binary_table);
@@ -110,7 +109,6 @@ static inline void parser_enter_scope(parser_t * parser) {
 
 static inline void parser_exit_scope(parser_t * parser) {
     var_table_exit(&parser->var_table);
-    type_table_exit(&parser->type_table);
     operator_table_exit(&parser->prefix_table);
     operator_table_exit(&parser->postfix_table);
     operator_table_exit(&parser->binary_table);
@@ -220,7 +218,7 @@ ast_expr_list_t * make_expr_list(ast_expr_t * expr, ast_expr_list_t * next) {
 // Statement
 ast_import_t * make_import(ast_cid_t * module) {
     ast_import_t * import = new_data(ast_import_t);
-    import->super.type = AST_IMPORT;
+    import->super.category = AST_IMPORT;
     import->module = module;
     return import;
 }
@@ -236,22 +234,22 @@ type_struct_t * make_type_struct(string_t * name, var_declare_list_t * members, 
 
 ast_struct_t * make_struct(type_struct_t * type) {
     ast_struct_t * s = new_data(ast_struct_t);
-    s->super.type = AST_STRUCT;
+    s->super.category = AST_STRUCT;
     s->type = type;
     return s;
 }
 
 ast_let_t * make_let(var_declare_t * var, ast_expr_t * expr) {
     ast_let_t * let = new_data(ast_let_t);
-    let->super.type = AST_LET;
+    let->super.category = AST_LET;
     let->var = var;
     let->expr = expr;
     return let;
 }
 
 // Expr
-void expr_init(ast_expr_t * expr, ast_type_t ast_type, type_t * type) {
-    expr->super.type = ast_type;
+void expr_init(ast_expr_t * expr, ast_category_t category, type_t * type) {
+    expr->super.category = category;
     expr->type = type;
 }
 
@@ -491,7 +489,7 @@ static bool parse_block_rec(parser_t * parser, token_stream_t * stream, ast_stat
         *p_the_last = the_last;
         return true;
     } else {
-        require(ast_is_expr(statement->type), "Need expr", stream);
+        require(ast_is_expr(statement->category), "Need expr", stream);
         *p_statements = NULL;
         *p_the_last = container_of(statement, ast_expr_t, super);
         return true;
@@ -567,7 +565,7 @@ ast_ref_t * parse_ref(parser_t * parser, token_stream_t * stream) {
     }
     var_def_t *def = get_var(parser, &token->value, stream);
     token_stream_poll(stream);
-    return make_ref(def->level, def->index, def->name, def->type);
+    return make_ref(def->super.level, def->super.index, def->super.name, def->type);
 }
 
 ast_struct_ref_t * parse_struct_ref(ast_expr_t * base, token_stream_t * stream) {
@@ -661,7 +659,7 @@ static inline ast_expr_t * build_unary_apply(operator_def_t * op, ast_expr_t * o
     if (op == NULL) {
         return operand;
     } else {
-        return &make_fun_apply(&make_ref(op->var->level, op->var->index, op->var->name, FUN_TYPE)->super, make_expr_list(operand, NULL))->super;
+        return &make_fun_apply(&make_ref(op->var->super.level, op->var->super.index, op->var->super.name, FUN_TYPE)->super, make_expr_list(operand, NULL))->super;
     }
 }
 
@@ -709,7 +707,7 @@ static inline ast_expr_t * build_binary_apply(operator_def_t * op, ast_expr_t * 
         ensure(left == NULL);
         return right;
     } else {
-        return &make_fun_apply(&make_ref(op->var->level, op->var->index, op->var->name, FUN_TYPE)->super,
+        return &make_fun_apply(&make_ref(op->var->super.level, op->var->super.index, op->var->super.name, FUN_TYPE)->super,
                                make_expr_list(left, make_expr_list(right, NULL)))->super;
     }
 }

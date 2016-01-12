@@ -1,5 +1,6 @@
 AST_DEF(AST_ID,                 ast_id_t,                 BASIC,       id)
 AST_DEF(AST_CID,                ast_cid_t,                BASIC,       cid)
+// AST_DEF(AST_TYPE,               ast_type_t,               BASIC,       type)
 AST_DEF(AST_VAR_DECLARE,        ast_var_declare_t,        BASIC,       var_declare)
 AST_DEF(AST_VAR_DECLARE_LIST,   ast_var_declare_list_t,   BASIC,       var_declare_list)
 AST_DEF(AST_STATEMENT,          ast_statement_t,          BASIC,       statement)

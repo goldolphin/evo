@@ -14,7 +14,7 @@ typedef enum {
 #define AST_DEF(a, b, c, d) a,
 #include "ast_define.def"
 #undef AST_DEF
-} ast_type_t;
+} ast_category_t;
 
 typedef struct {
     string_t * name;
@@ -26,7 +26,12 @@ typedef struct ast_cid_s {
 } ast_cid_t;
 
 typedef struct {
-    ast_type_t type;
+    int index;
+    string_t * name;
+} ast_type_t;
+
+typedef struct {
+    ast_category_t category;
 } ast_statement_t;
 
 typedef struct ast_statement_list_s {
@@ -104,9 +109,9 @@ DEFINE_EXPR(ast_long_t,
     long value;
 )
 
-const char *ast_type_name(ast_type_t type);
+const char *ast_type_name(ast_category_t category);
 
-bool ast_is_expr(ast_type_t type);
+bool ast_is_expr(ast_category_t categoryT);
 
 void print_statement(int level, ast_statement_t * statement);
 

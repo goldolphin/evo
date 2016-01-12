@@ -8,13 +8,34 @@
 #include "symbol_table.h"
 #include "utils.h"
 
+struct symbol_list_s;
+typedef struct symbol_list_s symbol_list_t;
+struct symbol_list_s {
+    symbol_list_t * outer;
+    hashmap_iterator_t iter;
+    symbol_list_t * sibling;
+    symbol_t symbol[0];
+};
 
-void symbol_table_init(symbol_table_t * table, size_t initial_capacity, symbol_list_new_node_t new_node, symbol_list_free_node_t free_node) {
+struct symbol_scope_s {
+    int count;
+    symbol_list_t * list;
+    symbol_scope_t * outer;
+};
+
+static symbol_list_t *new_symbol_node(symbol_table_t *table) {
+    return (symbol_list_t *) new_array(uint8_t, sizeof(symbol_list_t) + table->symbol_instance_size);
+}
+
+static void delete_symbol_node(symbol_table_t *table, symbol_list_t *node) {
+    free(node);
+}
+
+void symbol_table_init(symbol_table_t * table, size_t initial_capacity, size_t symbol_instance_size) {
     table->level = 0;
     table->scopes = NULL;
     hashmap_init1(&table->map, initial_capacity, string_hash_func, string_equal_func);
-    table->new_node = new_node;
-    table->free_node = free_node;
+    table->symbol_instance_size = symbol_instance_size;
 
     symbol_table_enter(table);
 }
@@ -26,46 +47,46 @@ void symbol_table_destroy(symbol_table_t * table) {
     hashmap_destroy(&table->map);
 }
 
-symbol_list_t * symbol_table_add(symbol_table_t * table, string_t * name) {
+symbol_t * symbol_table_add(symbol_table_t * table, string_t * name) {
     hashmap_iterator_t it = hashmap_find(&table->map, name);
     symbol_list_t * outer = NULL;
     symbol_list_t * node;
     string_t * key;
     if (it == hashmap_end(&table->map)) {
         key = string_dup(name);
-        node = table->new_node();
+        node = new_symbol_node(table);
         it = hashmap_put(&table->map, key, node);
         ensure(it != hashmap_end(&table->map));
     } else {
         pair_t kv;
         hashmap_iterator_get(it, &kv);
         outer = kv.value;
-        ensure(outer->level <= table->level);
-        if (outer->level == table->level) {
+        ensure(outer->symbol->level <= table->level);
+        if (outer->symbol->level == table->level) {
             return NULL;
         }
         key = kv.key;
-        node = table->new_node();
+        node = new_symbol_node(table);
         hashmap_iterator_set_value(it, node);
     }
     node->outer = outer;
-    node->level = table->level;
-    node->index = table->scopes->count;
-    node->name = key;
+    node->symbol->level = table->level;
+    node->symbol->index = table->scopes->count;
+    node->symbol->name = key;
 
     node->iter = it;
     node->sibling = table->scopes->list;
     table->scopes->list = node;
     ++ table->scopes->count;
-    return node;
+    return node->symbol;
 }
 
-symbol_list_t * symbol_table_get(symbol_table_t * table, string_t * name) {
+symbol_t * symbol_table_get(symbol_table_t * table, string_t * name) {
     hashmap_iterator_t it = hashmap_find(&table->map, name);
     if (it != hashmap_end(&table->map)) {
         pair_t kv;
         hashmap_iterator_get(it, &kv);
-        return kv.value;
+        return ((symbol_list_t * )kv.value)->symbol;
     }
     return NULL;
 }
@@ -95,7 +116,7 @@ void symbol_table_exit(symbol_table_t * table) {
         } else {
             hashmap_iterator_set_value(head->iter, head->outer);
         }
-        table->free_node(head);
+        delete_symbol_node(table, head);
         head = sibling;
     }
     table->scopes = current->outer;
