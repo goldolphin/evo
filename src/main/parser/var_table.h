@@ -7,7 +7,7 @@
 #define EVO_VAR_TABLE_H
 
 #include "symbol_table.h"
-#include "type.h"
+#include "type/type.h"
 
 typedef struct {
     symbol_t super;

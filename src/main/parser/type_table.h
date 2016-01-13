@@ -7,7 +7,7 @@
 #define EVO_TYPE_TABLE_H
 
 #include "symbol_table.h"
-#include "type.h"
+#include "type/type.h"
 
 typedef struct {
     symbol_t super;
@@ -26,7 +26,7 @@ void type_table_declare(type_table_t *table, string_t * name);
 
 bool type_table_define(type_table_t *table, string_t * name, type_t * type);
 
-type_t * type_table_get(type_table_t *table, string_t * name);
+type_def_t * type_table_get(type_table_t *table, string_t * name);
 
 // type table should not have scopes.
 //static inline void type_table_enter(type_table_t * table) {

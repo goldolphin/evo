@@ -5,7 +5,7 @@
 
 #include <utils/memory.h>
 #include "ast.h"
-#include "type.h"
+#include "type/struct.h"
 
 static bool sbuilder_id(sbuilder_t * builder, ast_id_t * id) {
     if (id == NULL) {
@@ -29,21 +29,13 @@ static bool sbuilder_cid(sbuilder_t * builder, ast_cid_t * cid) {
     }
 }
 
-static bool sbuilder_type(sbuilder_t * builder, type_t * type) {
-    if (type == NULL) {
-        return sbuilder_str(builder, "TYPE_NULL");
-    } else {
-        return sbuilder_string(builder, type->name);
-    }
-}
-
-static bool sbuilder_var_declare(sbuilder_t * builder, var_declare_t * var_declare) {
+static bool sbuilder_var_declare(sbuilder_t * builder, ast_var_declare_t * var_declare) {
     sbuilder_string(builder, var_declare->name);
     sbuilder_str(builder, ":");
-    return sbuilder_type(builder, var_declare->type);
+    return sbuilder_type(builder, &var_declare->type);
 }
 
-static bool sbuilder_var_declare_list(sbuilder_t * builder, var_declare_list_t * var_declare_list) {
+static bool sbuilder_var_declare_list(sbuilder_t * builder, ast_var_declare_list_t * var_declare_list) {
     if (var_declare_list == NULL) {
         return sbuilder_str(builder, "NULL");
     }
@@ -81,13 +73,19 @@ static void print_cid(int level, ast_cid_t * cid) {
     print_indent(level, builder.buf);
 }
 
-static void print_var_declare(int level, var_declare_t * var_declare) {
+static void print_type(int level, ast_type_t * type) {
+    SBUILDER(builder, 1024);
+    sbuilder_type(&builder, type);
+    print_indent(level, builder.buf);
+}
+
+static void print_var_declare(int level, ast_var_declare_t * var_declare) {
     SBUILDER(builder, 1024);
     sbuilder_var_declare(&builder, var_declare);
     print_indent(level, builder.buf);
 }
 
-static void print_var_declare_list(int level, var_declare_list_t * var_declare_list) {
+static void print_var_declare_list(int level, ast_var_declare_list_t * var_declare_list) {
     SBUILDER(builder, 1024);
     sbuilder_var_declare_list(&builder, var_declare_list);
     print_indent(level, builder.buf);

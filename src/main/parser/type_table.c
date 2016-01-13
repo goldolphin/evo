@@ -37,10 +37,10 @@ bool type_table_define(type_table_t *table, string_t * name, type_t * type) {
     return true;
 }
 
-type_t * type_table_get(type_table_t *table, string_t * name) {
+type_def_t * type_table_get(type_table_t *table, string_t * name) {
     symbol_t *node = symbol_table_get(&table->super, name);
     if (node == NULL) {
         return NULL;
     }
-    return container_of(node, type_def_t, super)->type;
+    return container_of(node, type_def_t, super);
 }

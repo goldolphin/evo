@@ -9,7 +9,10 @@
 #include "operator_table.h"
 #include "var_table.h"
 #include "ast.h"
-#include "type.h"
+#include "type/type.h"
+#include "type_table.h"
+#include "symbol_table.h"
+#include "type/struct.h"
 
 #define SYMBOL_TABLE_INITIAL_CAPACITY 4096
 
@@ -38,8 +41,8 @@ static inline void parser_define_var(const char * func_name, parser_t * parser, 
 
 #define define_var(parser, name, type, stream) parser_define_var(__FUNCTION__, parser, name, type, stream)
 
-static inline type_t * parser_get_type(const char * func_name, parser_t * parser, string_t * name, token_stream_t * stream) {
-    type_t *type = type_table_get(&parser->type_table, name);
+static inline type_def_t * parser_get_type(const char * func_name, parser_t * parser, string_t * name, token_stream_t * stream) {
+    type_def_t *type = type_table_get(&parser->type_table, name);
     if (type == NULL) {
         SBUILDER(builder, 1024);
         sbuilder_str(&builder, "Undefined type: ");
@@ -187,15 +190,16 @@ ast_cid_t * make_cid(ast_id_t * id, ast_cid_t * parent) {
     return cid;
 }
 
-var_declare_t * make_var_declare(string_t * name, type_t * type) {
-    var_declare_t * var_declare = new_data(var_declare_t);
+ast_var_declare_t * make_var_declare(string_t * name, type_def_t * type_def) {
+    ast_var_declare_t * var_declare = new_data(ast_var_declare_t);
     var_declare->name = name;
-    var_declare->type = type;
+    var_declare->type.index = type_def->super.index;
+    var_declare->type.name = type_def->super.name;
     return var_declare;
 }
 
-var_declare_list_t * make_var_declare_list(var_declare_t * var, var_declare_list_t * next) {
-    var_declare_list_t * var_declare_list = new_data(var_declare_list_t);
+ast_var_declare_list_t * make_var_declare_list(ast_var_declare_t * var, ast_var_declare_list_t * next) {
+    ast_var_declare_list_t * var_declare_list = new_data(ast_var_declare_list_t);
     var_declare_list->var = var;
     var_declare_list->next = next;
     return var_declare_list;
@@ -223,7 +227,7 @@ ast_import_t * make_import(ast_cid_t * module) {
     return import;
 }
 
-type_struct_t * make_type_struct(string_t * name, var_declare_list_t * members, type_struct_t * parent) {
+type_struct_t * make_type_struct(string_t * name, ast_var_declare_list_t * members, type_struct_t * parent) {
     type_struct_t * s = new_data(type_struct_t);
     s->super.category = TC_STRUCT;
     s->super.name = string_dup(name);
@@ -239,7 +243,7 @@ ast_struct_t * make_struct(type_struct_t * type) {
     return s;
 }
 
-ast_let_t * make_let(var_declare_t * var, ast_expr_t * expr) {
+ast_let_t * make_let(ast_var_declare_t * var, ast_expr_t * expr) {
     ast_let_t * let = new_data(ast_let_t);
     let->super.category = AST_LET;
     let->var = var;
@@ -248,14 +252,22 @@ ast_let_t * make_let(var_declare_t * var, ast_expr_t * expr) {
 }
 
 // Expr
-void expr_init(ast_expr_t * expr, ast_category_t category, type_t * type) {
+void expr_init(ast_expr_t * expr, ast_category_t category, ast_type_t * type) {
     expr->super.category = category;
-    expr->type = type;
+    expr->type.index = type->index;
+    expr->type.name = type->name;
 }
 
-ast_fun_t * make_fun(int param_num, var_declare_list_t * params, ast_cid_t * return_type, ast_expr_t * body) {
+void expr_init1(ast_expr_t * expr, ast_category_t category, type_def_t * type_def) {
+    expr->super.category = category;
+    expr->type.index = type_def->super.index;
+    expr->type.name = type_def->super.name;
+}
+
+ast_fun_t * make_fun(parser_t * parser, int param_num, ast_var_declare_list_t * params, ast_cid_t * return_type, ast_expr_t * body) {
     ast_fun_t * fun = new_data(ast_fun_t);
-    expr_init(&fun->super, AST_FUN, FUN_TYPE);
+
+    expr_init1(&fun->super, AST_FUN, get_type(parser, FUN_TYPE->name, NULL));
     fun->param_num = param_num;
     fun->params = params;
     fun->return_type = return_type;
@@ -265,29 +277,29 @@ ast_fun_t * make_fun(int param_num, var_declare_list_t * params, ast_cid_t * ret
 
 ast_block_t * make_block(ast_statement_list_t * statements, ast_expr_t * the_last) {
     ast_block_t * block = new_data(ast_block_t);
-    expr_init(&block->super, AST_BLOCK, the_last->type);
+    expr_init(&block->super, AST_BLOCK, &the_last->type);
     block->statements = statements;
     block->the_last = the_last;
     return block;
 }
 
-ast_str_t * make_str(string_t * value) {
+ast_str_t * make_str(parser_t * parser, string_t * value) {
     ast_str_t * str = new_data(ast_str_t);
-    expr_init(&str->super, AST_STR, STRING_TYPE);
+    expr_init1(&str->super, AST_STR, get_type(parser, STRING_TYPE->name, NULL));
     str->value = string_dup(value);
     return str;
 }
 
-ast_double_t * make_double(double value) {
+ast_double_t * make_double(parser_t * parser, double value) {
     ast_double_t * d = new_data(ast_double_t);
-    expr_init(&d->super, AST_DOUBLE, DOUBLE_TYPE);
+    expr_init1(&d->super, AST_DOUBLE, get_type(parser, DOUBLE_TYPE->name, NULL));
     d->value = value;
     return d;
 }
 
-ast_long_t * make_long(long value) {
+ast_long_t * make_long(parser_t * parser, long value) {
     ast_long_t * d = new_data(ast_long_t);
-    expr_init(&d->super, AST_LONG, LONG_TYPE);
+    expr_init1(&d->super, AST_LONG, get_type(parser, LONG_TYPE->name, NULL));
     d->value = value;
     return d;
 }
