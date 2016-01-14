@@ -9,7 +9,6 @@
 #include "type.h"
 
 typedef struct {
-    string_t * name;
     type_t type;
 } fun_param_t;
 
@@ -22,11 +21,15 @@ typedef struct {
 
 void fun_info_init(fun_info_t * fun_info, fun_param_t * params, int params_num, type_t * return_type);
 
-int fun_info_param_index(fun_info_t * fun_info, string_t * name);
+static inline int fun_info_params_num(fun_info_t * fun_info, string_t * name) {
+    return fun_info->params_num;
+}
 
 fun_param_t * fun_info_param(fun_info_t * fun_info, int index);
 
-type_t * fun_info_return_type(fun_info_t * fun_info);
+static inline type_t * fun_info_return_type(fun_info_t * fun_info) {
+    return &fun_info->return_type;
+}
 
 bool sbuilder_fun_info(sbuilder_t * builder, fun_info_t * fun_info);
 

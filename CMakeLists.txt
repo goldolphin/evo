@@ -10,7 +10,7 @@ add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/ma
         src/main/utils/string.c src/main/utils/string.h src/main/utils/pair.c src/main/utils/pair.h src/main/utils/hashmap.c src/main/utils/hashmap.h
         src/main/utils/stack.h src/main/utils/list.h)
 
-add_library(type STATIC src/main/type/type.c src/main/type/type.h src/main/type/struct.c src/main/type/struct.h src/main/type/fun.cpp src/main/type/fun.h)
+add_library(type STATIC src/main/type/type.c src/main/type/type.h src/main/type/struct.c src/main/type/struct.h src/main/type/fun.cpp src/main/type/fun.h src/main/type/type_table.c.cpp src/main/type/type_table.c.h src/main/type/fun_map.c src/main/type/fun_map.h)
 target_link_libraries(type utils)
 
 add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c
