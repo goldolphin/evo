@@ -51,30 +51,5 @@ static inline void parser_require_id(const char * func_name, token_t * token, co
 
 #define require_id(token, value, stream) parser_require_id(__FUNCTION__, token, value, stream)
 
-static inline string_t * string_new(int len) {
-    uint8_t * s = new_array(uint8_t, len);
-    string_t * str = new_data(string_t);
-    string_init(str, s, len);
-    return str;
-}
-
-static inline string_t * string_dup(string_t * from) {
-    string_t * to = string_new(from->len);
-    memcpy(to->value, from->value, (size_t) from->len);
-    return to;
-}
-
-static inline string_t * string_concat(string_t * a, const char * b) {
-    size_t len_b = strlen(b);
-    string_t * to = string_new((int) (a->len + len_b));
-    memcpy(to->value, a->value, (size_t) a->len);
-    memcpy(&to->value[a->len], b, len_b);
-    return to;
-}
-
-static inline void string_free(string_t * s) {
-    free(s->value);
-    free(s);
-}
 
 #endif //EVO_UTILS_H
