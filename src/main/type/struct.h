@@ -10,7 +10,7 @@
 
 typedef struct {
     string_t * name;
-    type_t type;
+    type_t * type;
 } struct_field_t;
 
 typedef struct {
@@ -19,7 +19,7 @@ typedef struct {
     int fields_num;
 } struct_info_t;
 
-void struct_info_init(struct_info_t * struct_info, struct_field_t * fields, int fields_num);
+void struct_info_init(struct_info_t * struct_info, string_t * name, struct_field_t * fields, int fields_num);
 
 int struct_info_field_index(struct_info_t * struct_info, string_t * name);
 

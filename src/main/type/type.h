@@ -9,49 +9,63 @@
 #include <utils/string.h>
 
 typedef enum {
-    TC_PRIMITIVE,
+    // Incomplete type
+    TC_HOLDER,
+
+    // Primitive types
+    TC_UNIT,
+    TC_BOOL,
+    TC_INT,
+    TC_LONG,
+    TC_DOUBLE,
+    TC_STRING,
+
+    // Function types
     TC_FUN,
+
+    // Product types
     TC_STRUCT,
 } type_category_t;
 
-typedef enum {
-    // Primitive types
-    TI_UNIT,
-    TI_BOOL,
-    TI_INT,
-    TI_LONG,
-    TI_DOUBLE,
-    TI_STRING,
-    TI_FUN,
-
-    TYPE_ID_PRIMITIVE_NUM = 16,
-};
-
-typedef struct {
-    int id;
-    string_t * name;
-} type_t;
-
+/**
+ * type_info_t
+ */
 typedef struct {
     type_category_t category;
+    string_t * name;
 } type_info_t;
 
-extern type_t * UNIT_TYPE;
-extern type_t * BOOL_TYPE;
-extern type_t * INT_TYPE;
-extern type_t * LONG_TYPE;
-extern type_t * DOUBLE_TYPE;
-extern type_t * STRING_TYPE;
-extern type_t * FUN_TYPE;
+static inline void type_info_init(type_info_t * type_info, type_category_t category, string_t * name) {
+    type_info->category = category;
+    type_info->name = name;
+}
 
-void type_init(type_t * type, int id, string_t * name);
+/**
+ * type_t
+ */
+typedef struct {
+    type_info_t * info;
+} type_t;
 
-void type_copy(type_t * type, type_t * other);
+static inline void type_init(type_t * type, type_info_t * info) {
+    type->info = info;
+}
+
+static inline void type_copy(type_t * type, type_t * other) {
+    type_init(type, other->info);
+}
 
 bool sbuilder_type(sbuilder_t * builder, type_t * type);
 
-static inline void type_info_init(type_info_t * type_info, type_category_t category) {
-    type_info->category = category;
-}
+/**
+ * Constant type infos.
+ */
+extern type_info_t * TYPE_INFO_HOLDER;
+extern type_info_t * TYPE_INFO_UNIT;
+extern type_info_t * TYPE_INFO_BOOL;
+extern type_info_t * TYPE_INFO_INT;
+extern type_info_t * TYPE_INFO_LONG;
+extern type_info_t * TYPE_INFO_DOUBLE;
+extern type_info_t * TYPE_INFO_STRING;
 
 #endif //EVO_TYPE_H
