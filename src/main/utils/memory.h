@@ -10,12 +10,15 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <errno.h>
 
 /**
  * Utils.
  */
 
-#define ensure(expr) do {if(!(expr)) *(char *)0=0;} while(0)
+#define ensure(expr) do {if(!(expr)) { \
+fprintf(stderr, "Ensure fails for `%s` with errno=%d(%s) at %s:%d in %s()\n", #expr, errno, strerror(errno), __FILE__, __LINE__, __FUNCTION__); \
+abort();}} while(0)
 
 #define new_data(type) ((type *) malloc(sizeof(type)))
 

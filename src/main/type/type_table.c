@@ -21,7 +21,7 @@ void type_table_declare(type_table_t *table, string_t * name) {
     if (!hashmap_get(&table->map, name, &kv)) {
         type_t * type = new_data(type_t);
         type_init(type, TYPE_INFO_HOLDER);
-        hashmap_put(&table->map, name, type);
+        hashmap_put(&table->map, string_dup(name), type);
     }
 }
 
@@ -33,7 +33,7 @@ bool type_table_define(type_table_t *table, string_t * name, type_info_t * info)
     } else {
         type = new_data(type_t);
         type_init(type, TYPE_INFO_HOLDER);
-        hashmap_put(&table->map, name, type);
+        hashmap_put(&table->map, string_dup(name), type);
     }
     if (type->info == TYPE_INFO_HOLDER) {
         type->info = info;

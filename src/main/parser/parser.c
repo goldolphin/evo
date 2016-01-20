@@ -81,99 +81,10 @@ static inline void add_op(parser_t * parser, operator_table_t * table, const cha
     operator_table_add(table, &op_name, true, precedence, var_def);
 }
 
-void parser_add_prefix(parser_t * parser, const char * op, int precedence, const char * var) {
-    add_op(parser, &parser->prefix_table, op, precedence, var);
-}
-
-void parser_add_postfix(parser_t * parser, const char * op, int precedence, const char * var) {
-    add_op(parser, &parser->postfix_table, op, precedence, var);
-}
-
-void parser_add_binary(parser_t * parser, const char * op, bool left2right, int precedence, const char * var) {
-    add_op(parser, &parser->binary_table, op, precedence, var);
-}
-
-void parser_add_var(parser_t * parser, const char * var, type_t * type) {
-    string_t var_name;
-    string_init(&var_name, (uint8_t *) var, (int) strlen(var));
-    define_var(parser, &var_name, type, NULL);
-}
-
-void parser_add_type(parser_t * parser, type_t * type) {
-    define_type(parser, type, NULL);
-}
-
-static inline void parser_enter_scope(parser_t * parser) {
-    var_table_enter(&parser->var_table);
-    operator_table_enter(&parser->prefix_table);
-    operator_table_enter(&parser->postfix_table);
-    operator_table_enter(&parser->binary_table);
-}
-
-static inline void parser_exit_scope(parser_t * parser) {
-    var_table_exit(&parser->var_table);
-    operator_table_exit(&parser->prefix_table);
-    operator_table_exit(&parser->postfix_table);
-    operator_table_exit(&parser->binary_table);
-}
-
 void parser_init(parser_t * parser) {
-    var_table_init(&parser->var_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-    type_table_init(&parser->type_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-    operator_table_init(&parser->prefix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-    operator_table_init(&parser->postfix_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-    operator_table_init(&parser->binary_table, SYMBOL_TABLE_INITIAL_CAPACITY);
-
-    parser_add_var(parser, "__ne", FUN_TYPE);
-    parser_add_binary(parser, "!=", true, 5, "__ne");
-
-    parser_add_var(parser, "__eq", FUN_TYPE);
-    parser_add_binary(parser, "==", true, 5, "__eq");
-
-    parser_add_var(parser, "__or", FUN_TYPE);
-    parser_add_binary(parser, "||", true, 5, "__or");
-
-    parser_add_var(parser, "__lt", FUN_TYPE);
-    parser_add_binary(parser, "<", true, 5, "__lt");
-
-    parser_add_var(parser, "__ge", FUN_TYPE);
-    parser_add_binary(parser, ">=", true, 5, "__ge");
-
-    parser_add_var(parser, "__re", FUN_TYPE);
-    parser_add_binary(parser, "%", true, 5, "__re");
-
-    parser_add_var(parser, "__add", FUN_TYPE);
-    parser_add_binary(parser, "+", true, 5, "__add");
-
-    parser_add_var(parser, "__sub", FUN_TYPE);
-    parser_add_binary(parser, "-", true, 5, "__sub");
-
-    parser_add_var(parser, "__mul", FUN_TYPE);
-    parser_add_binary(parser, "*", true, 4, "__mul");
-
-    parser_add_var(parser, "__neg", FUN_TYPE);
-    parser_add_prefix(parser, "-", 2, "__neg");
-
-    parser_add_var(parser, "printf", FUN_TYPE);
-    parser_add_var(parser, "printfn", FUN_TYPE);
-    parser_add_var(parser, "if", FUN_TYPE);
-    parser_add_var(parser, "rand", FUN_TYPE);
-
-    parser_add_type(parser, UNIT_TYPE);
-    parser_add_type(parser, BOOL_TYPE);
-    parser_add_type(parser, INT_TYPE);
-    parser_add_type(parser, LONG_TYPE);
-    parser_add_type(parser, DOUBLE_TYPE);
-    parser_add_type(parser, FUN_TYPE);
-    parser_add_type(parser, STRING_TYPE);
 }
 
 void parser_destroy(parser_t * parser) {
-    var_table_destroy(&parser->var_table);
-    type_table_destroy(&parser->type_table);
-    operator_table_destroy(&parser->prefix_table);
-    operator_table_destroy(&parser->postfix_table);
-    operator_table_destroy(&parser->binary_table);
 }
 
 // Basic
