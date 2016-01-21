@@ -7,53 +7,54 @@
 #include "parser_context.h"
 
 static void init_prelude(module_t * module) {
-    module_define_var(module, &STRING("__ne"), NULL);
-    module_define_binary(module, &STRING("!="), true, 5, &STRING("__ne"));
-
-    module_define_var(module, &STRING("__eq"), NULL);
-    module_define_binary(module, &STRING("=="), true, 5, &STRING("__eq"));
-
-    module_define_var(module, &STRING("__or"), NULL);
-    module_define_binary(module, &STRING("||"), true, 5, &STRING("__or"));
-
-    module_define_var(module, &STRING("__lt"), NULL);
-    module_define_binary(module, &STRING("<"), true, 5, &STRING("__lt"));
-
-    module_define_var(module, &STRING("__ge"), NULL);
-    module_define_binary(module, &STRING(">="), true, 5, &STRING("__ge"));
-
-    module_define_var(module, &STRING("__re"), NULL);
-    module_define_binary(module, &STRING("%"), true, 5, &STRING("__re"));
-
-    module_define_var(module, &STRING("__add"), NULL);
-    module_define_binary(module, &STRING("+"), true, 5, &STRING("__add"));
-
-    module_define_var(module, &STRING("__sub"), NULL);
-    module_define_binary(module, &STRING("-"), true, 5, &STRING("__sub"));
-
-    module_define_var(module, &STRING("__mul"), NULL);
-    module_define_binary(module, &STRING("*"), true, 4, &STRING("__mul"));
-
-    module_define_var(module, &STRING("__neg"), NULL);
-    module_define_prefix(module, &STRING("-"), 2, &STRING("__neg"));
-
-    module_define_var(module, &STRING("printf"), NULL);
-    module_define_var(module, &STRING("printfn"), NULL);
-    module_define_var(module, &STRING("if"), NULL);
-    module_define_var(module, &STRING("rand"), NULL);
-
     module_define_type(module, TYPE_INFO_UNIT->name, TYPE_INFO_UNIT);
     module_define_type(module, TYPE_INFO_BOOL->name, TYPE_INFO_BOOL);
     module_define_type(module, TYPE_INFO_INT->name, TYPE_INFO_INT);
     module_define_type(module, TYPE_INFO_LONG->name, TYPE_INFO_LONG);
     module_define_type(module, TYPE_INFO_DOUBLE->name, TYPE_INFO_DOUBLE);
     module_define_type(module, TYPE_INFO_STRING->name, TYPE_INFO_STRING);
+    module_define_type(module, TYPE_INFO_FUN->name, TYPE_INFO_STRING);
+
+    module_define_var(module, STRING("__ne"), NULL);
+    module_define_binary(module, STRING("!="), true, 5, STRING("__ne"));
+
+    module_define_var(module, STRING("__eq"), NULL);
+    module_define_binary(module, STRING("=="), true, 5, STRING("__eq"));
+
+    module_define_var(module, STRING("__or"), NULL);
+    module_define_binary(module, STRING("||"), true, 5, STRING("__or"));
+
+    module_define_var(module, STRING("__lt"), NULL);
+    module_define_binary(module, STRING("<"), true, 5, STRING("__lt"));
+
+    module_define_var(module, STRING("__ge"), NULL);
+    module_define_binary(module, STRING(">="), true, 5, STRING("__ge"));
+
+    module_define_var(module, STRING("__re"), NULL);
+    module_define_binary(module, STRING("%"), true, 5, STRING("__re"));
+
+    module_define_var(module, STRING("__add"), NULL);
+    module_define_binary(module, STRING("+"), true, 5, STRING("__add"));
+
+    module_define_var(module, STRING("__sub"), NULL);
+    module_define_binary(module, STRING("-"), true, 5, STRING("__sub"));
+
+    module_define_var(module, STRING("__mul"), NULL);
+    module_define_binary(module, STRING("*"), true, 4, STRING("__mul"));
+
+    module_define_var(module, STRING("__neg"), NULL);
+    module_define_prefix(module, STRING("-"), 2, STRING("__neg"));
+
+    module_define_var(module, STRING("printf"), NULL);
+    module_define_var(module, STRING("printfn"), NULL);
+    module_define_var(module, STRING("if"), NULL);
+    module_define_var(module, STRING("rand"), NULL);
 }
 
 void parser_context_init(parser_context_t * context, size_t initial_capacity) {
     hashmap_init1(&context->module_map, initial_capacity, string_hash_func, string_equal_func);
     context->current_module = NULL;
-    ensure(parser_context_add_module(context, &STRING("prelude")));
+    ensure(parser_context_add_module(context, STRING("prelude")));
     init_prelude(context->current_module);
 }
 

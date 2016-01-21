@@ -6,8 +6,7 @@
 #include "type.h"
 
 #define DEFINE_TYPE(var, category, name) \
-static string_t s_##var##_name = STRING(name); \
-static type_info_t s_##var = {category, &s_##var##_name}; \
+static type_info_t s_##var = {category, STRING(name)}; \
 type_info_t * var = &s_##var;
 
 DEFINE_TYPE(TYPE_INFO_HOLDER, TC_HOLDER, "Holder")

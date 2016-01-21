@@ -15,7 +15,7 @@ typedef struct {
     int len;
 } string_t;
 
-#define STRING(str) ((string_t){(uint8_t *) str, sizeof(str)-1})
+#define STRING(str) (&(string_t){(uint8_t *) str, sizeof(str)-1})
 
 void string_init(string_t *str, uint8_t *value, int len);
 

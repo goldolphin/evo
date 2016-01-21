@@ -67,5 +67,6 @@ extern type_info_t * TYPE_INFO_INT;
 extern type_info_t * TYPE_INFO_LONG;
 extern type_info_t * TYPE_INFO_DOUBLE;
 extern type_info_t * TYPE_INFO_STRING;
+extern type_info_t * TYPE_INFO_FUN;
 
 #endif //EVO_TYPE_H

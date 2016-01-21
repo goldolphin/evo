@@ -21,4 +21,8 @@ bool parser_context_add_module(parser_context_t * context, string_t * name);
 
 module_t * parser_context_get_module(parser_context_t * context, string_t * name);
 
+static inline module_t * parser_context_current_module(parser_context_t * context) {
+    return context->current_module;
+}
+
 #endif //EVO_PARSER_CONTEXT_H

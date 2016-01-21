@@ -243,32 +243,33 @@ ast_struct_ref_t * make_struct_ref(ast_expr_t * base, int index, string_t * name
 
 // Parsers
 
-ast_id_t * parse_id(token_stream_t * stream) {
+bool parse_id(token_stream_t * stream, sbuilder_t * builder) {
     token_t * token = token_stream_peek(stream);
     if (token->type != TOKEN_ID) {
-        return NULL;
+        return false;
     }
+    sbuilder_string(builder, &token->value);
     token_stream_poll(stream);
-    return make_id(&token->value);
+    return true;
 }
 
-ast_cid_t * parse_cid(token_stream_t * stream) {
-    ast_id_t * id = parse_id(stream);
-    if (id == NULL) return NULL;
+bool parse_cid(token_stream_t * stream, sbuilder_t * builder) {
+    if (!parse_id(stream, builder)) return false;
     token_t * token = token_stream_peek(stream);
     if (token->type == TOKEN_PERIOD) {
         token_stream_poll(stream);
-        return make_cid(id, parse_cid(stream));
+        return parse_cid(stream, builder);
     } else {
-        return make_cid(id, NULL);
+        return true;
     }
 }
 
-ast_import_t * parse_import(token_stream_t * stream) {
+ast_import_t * parse_import(parser_context_t * context, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_IMPORT, stream);
 
     ast_cid_t * module = parse_cid(stream);
     require(module != NULL, "Need cid!", stream);
+    parser_context_current_module(context)
     return make_import(module);
 }
 
@@ -350,7 +351,7 @@ ast_let_t * parse_let(parser_t * parser, token_stream_t * stream) {
 }
 
 
-ast_statement_t * parse_statement(parser_t * parser, token_stream_t * stream) {
+ast_statement_t * parse_statement(parser_t * parser, parser_context_t * context, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
     if (token->type == TOKEN_END) {
         return NULL;
@@ -359,15 +360,15 @@ ast_statement_t * parse_statement(parser_t * parser, token_stream_t * stream) {
 
     switch (token->type) {
         case TOKEN_IMPORT:
-            return &parse_import(stream)->super;
+            return &parse_import(parser_context_t * context, stream)->super;
         case TOKEN_STRUCT:
-            return &parse_struct(parser, stream)->super;
+            return &parse_struct(parser, parser_context_t * context, stream)->super;
         case TOKEN_LET:
-            return &parse_let(parser, stream)->super;
+            return &parse_let(parser, parser_context_t * context, stream)->super;
         default:
             break;
     }
-    ast_expr_t * expr = parse_expr(parser, stream);
+    ast_expr_t * expr = parse_expr(parser, parser_context_t * context, stream);
     if (expr == NULL) return NULL;
     return &expr->super;
 }
