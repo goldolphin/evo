@@ -7,32 +7,8 @@
 #include "ast.h"
 #include "type/struct.h"
 
-static bool sbuilder_id(sbuilder_t * builder, ast_id_t * id) {
-    if (id == NULL) {
-        return sbuilder_str(builder, "NULL");
-    }
-    sbuilder_str(builder, "id(");
-    sbuilder_string(builder, id->name);
-    return sbuilder_str(builder, ")");
-}
-
-static bool sbuilder_cid(sbuilder_t * builder, ast_cid_t * cid) {
-    if (cid == NULL) {
-        return sbuilder_str(builder, "NULL");
-    }
-    if (cid->parent != NULL) {
-        sbuilder_id(builder, cid->id);
-        sbuilder_str(builder, ".");
-        return sbuilder_cid(builder, cid->parent);
-    } else {
-        return sbuilder_id(builder, cid->id);
-    }
-}
-
 static bool sbuilder_var_declare(sbuilder_t * builder, ast_var_declare_t * var_declare) {
-    sbuilder_string(builder, var_declare->name);
-    sbuilder_str(builder, ":");
-    return sbuilder_type(builder, &var_declare->type);
+    return sbuilder_string(builder, var_declare->name);
 }
 
 static bool sbuilder_var_declare_list(sbuilder_t * builder, ast_var_declare_list_t * var_declare_list) {
@@ -58,24 +34,6 @@ static void print_indent(int level, const char * str) {
 static void print_string(int level, string_t * str) {
     SBUILDER(builder, 1024);
     sbuilder_string(&builder, str);
-    print_indent(level, builder.buf);
-}
-
-static void print_id(int level, ast_id_t * id) {
-    SBUILDER(builder, 1024);
-    sbuilder_id(&builder, id);
-    print_indent(level, builder.buf);
-}
-
-static void print_cid(int level, ast_cid_t * cid) {
-    SBUILDER(builder, 1024);
-    sbuilder_cid(&builder, cid);
-    print_indent(level, builder.buf);
-}
-
-static void print_type(int level, ast_type_t * type) {
-    SBUILDER(builder, 1024);
-    sbuilder_type(&builder, type);
     print_indent(level, builder.buf);
 }
 
@@ -109,18 +67,12 @@ static void print_expr_list(int level, ast_expr_list_t * expr_list) {
 
 static void print_import(int level, ast_import_t * import) {
     print_indent(level, "import");
-    print_cid(level+1, import->module);
+    print_string(level+1, import->module_name);
 }
 
 static void print_struct(int level, ast_struct_t * s) {
     print_indent(level, "struct");
-    print_string(level+1, s->type->super.name);
-    print_var_declare_list(level+1, s->type->members);
-    if (s->type->parent == NULL) {
-        print_indent(level+1, "NULL");
-    } else {
-        print_string(level+1, s->type->parent->super.name);
-    }
+    print_var_declare_list(level+1, s->members);
 }
 
 static void print_let(int level, ast_let_t * let) {
@@ -134,7 +86,6 @@ static void print_fun(int level, ast_fun_t * fun) {
     sbuilder_format(&builder, "fun(%d)", fun->param_num);
     print_indent(level, builder.buf);
     print_var_declare_list(level+1, fun->params);
-    print_cid(level+1, fun->return_type);
     print_statement(level+1, &fun->body->super);
 }
 
@@ -209,10 +160,6 @@ bool ast_is_expr(ast_category_t category) {
 #undef AST_DEF
         default: return false;
     }
-}
-
-static void print_expr(int level, ast_expr_t * expr) {
-    ensure(false);
 }
 
 void print_statement(int level, ast_statement_t * statement) {

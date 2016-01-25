@@ -9,7 +9,6 @@
 static type_info_t s_##var = {category, STRING(name)}; \
 type_info_t * var = &s_##var;
 
-DEFINE_TYPE(TYPE_INFO_HOLDER, TC_HOLDER, "Holder")
 DEFINE_TYPE(TYPE_INFO_UNIT, TC_UNIT, "Unit")
 DEFINE_TYPE(TYPE_INFO_BOOL, TC_BOOL, "Bool")
 DEFINE_TYPE(TYPE_INFO_INT, TC_INT, "Int")

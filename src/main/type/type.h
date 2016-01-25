@@ -9,9 +9,6 @@
 #include <utils/string.h>
 
 typedef enum {
-    // Incomplete type
-    TC_HOLDER,
-
     // Primitive types
     TC_UNIT,
     TC_BOOL,
@@ -60,7 +57,6 @@ bool sbuilder_type(sbuilder_t * builder, type_t * type);
 /**
  * Constant type infos.
  */
-extern type_info_t * TYPE_INFO_HOLDER;
 extern type_info_t * TYPE_INFO_UNIT;
 extern type_info_t * TYPE_INFO_BOOL;
 extern type_info_t * TYPE_INFO_INT;

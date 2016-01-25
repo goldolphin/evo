@@ -5,6 +5,7 @@
 
 #include <utils/pair.h>
 #include "type_table.h"
+#include "type.h"
 
 void type_table_init(type_table_t *table, size_t initial_capacity) {
     hashmap_init1(&table->map, initial_capacity, string_hash_func, string_equal_func);
@@ -16,30 +17,17 @@ void type_table_destroy(type_table_t * table) {
     fun_table_destroy(&table->fun_map);
 }
 
-void type_table_declare(type_table_t *table, string_t * name) {
-    pair_t kv;
-    if (!hashmap_get(&table->map, name, &kv)) {
-        type_t * type = new_data(type_t);
-        type_init(type, TYPE_INFO_HOLDER);
-        hashmap_put(&table->map, string_dup(name), type);
-    }
-}
-
-bool type_table_define(type_table_t *table, string_t * name, type_info_t * info) {
+bool type_table_define(type_table_t *table, type_info_t * info) {
     pair_t kv;
     type_t * type;
-    if (hashmap_get(&table->map, name, &kv)) {
-        type = kv.value;
+    if (hashmap_get(&table->map, info->name, &kv)) {
+        return false;
     } else {
         type = new_data(type_t);
-        type_init(type, TYPE_INFO_HOLDER);
-        hashmap_put(&table->map, string_dup(name), type);
-    }
-    if (type->info == TYPE_INFO_HOLDER) {
-        type->info = info;
+        type_init(type, info);
+        hashmap_put(&table->map, info->name, type);
         return true;
     }
-    return false;
 }
 
 type_t * type_table_get(type_table_t *table, string_t * name) {

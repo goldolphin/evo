@@ -6,6 +6,7 @@
 #ifndef EVO_MEMORY_H
 #define EVO_MEMORY_H
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>

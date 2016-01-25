@@ -15,9 +15,11 @@ void test_str(const char * str) {
     token_stream_init(&ts, &lexer, &cs.super);
     parser_t parser;
     parser_init(&parser);
+    parser_context_t context;
+    parser_context_init(&context, 64);
 
     while (true) {
-        ast_statement_t *statement = parse_statement(&parser, &ts);
+        ast_statement_t *statement = parser_parse(&parser, &context, &ts);
         if (statement == NULL) break;
         print_statement(0, statement);
     }
@@ -32,9 +34,11 @@ void test_file(const char * filename) {
     token_stream_init(&ts, &lexer, &cs.super);
     parser_t parser;
     parser_init(&parser);
+    parser_context_t context;
+    parser_context_init(&context, 64);
 
     while (true) {
-        ast_statement_t *statement = parse_statement(&parser, &ts);
+        ast_statement_t *statement = parser_parse(&parser, &context, &ts);
         if (statement == NULL) break;
         print_statement(0, statement);
     }

@@ -17,21 +17,6 @@ typedef enum {
 
 typedef struct {
     string_t * name;
-} ast_id_t;
-
-typedef struct ast_cid_s {
-    ast_id_t * id;
-    struct ast_cid_s * parent;
-} ast_cid_t;
-
-typedef struct {
-    int index;
-    string_t * name;
-} ast_type_t;
-
-typedef struct {
-    string_t * name;
-    ast_type_t type;
 } ast_var_declare_t;
 
 typedef struct ast_var_declare_list_s {
@@ -50,7 +35,6 @@ typedef struct ast_statement_list_s {
 
 typedef struct {
     ast_statement_t super;
-    ast_type_t type;
 } ast_expr_t;
 
 typedef struct ast_expr_list_s {
@@ -65,11 +49,11 @@ typedef struct {ast_statement_t super; body} name;
 typedef struct {ast_expr_t super; body} name;
 
 DEFINE_STATEMENT(ast_import_t,
-    ast_cid_t * module;
+    string_t * module_name;
 )
 
 DEFINE_STATEMENT(ast_struct_t,
-    type_struct_t * type;
+    ast_var_declare_list_t * members;
 )
 
 DEFINE_STATEMENT(ast_let_t,
@@ -80,7 +64,6 @@ DEFINE_STATEMENT(ast_let_t,
 DEFINE_EXPR(ast_fun_t,
     int param_num;
     ast_var_declare_list_t * params;
-    ast_cid_t * return_type;
     ast_expr_t * body;
 )
 

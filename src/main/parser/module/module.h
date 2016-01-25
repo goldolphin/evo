@@ -57,12 +57,8 @@ static inline type_t * module_get_type(module_t * module, string_t * name) {
     return type_table_get(&module->type_table, name);
 }
 
-static inline void module_declare_type(module_t * module, string_t * name) {
-    type_table_declare(&module->type_table, name);
-}
-
-static inline bool module_define_type(module_t * module, string_t * name, type_info_t * info) {
-    return type_table_define(&module->type_table, name, info);
+static inline bool module_define_type(module_t * module, type_info_t * info) {
+    return type_table_define(&module->type_table, info);
 }
 
 bool module_import_module(module_t * module, module_t * to_import);

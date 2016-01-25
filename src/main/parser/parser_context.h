@@ -25,4 +25,12 @@ static inline module_t * parser_context_current_module(parser_context_t * contex
     return context->current_module;
 }
 
+static inline void parser_context_enter_scope(parser_context_t * context) {
+    module_enter_scope(context->current_module);
+}
+
+static inline void parser_context_exit_scope(parser_context_t * context) {
+    module_exit_scope(context->current_module);
+}
+
 #endif //EVO_PARSER_CONTEXT_H

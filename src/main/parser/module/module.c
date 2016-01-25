@@ -7,7 +7,7 @@
 #include "module.h"
 
 #define SYMBOL_TABLE_INITIAL_CAPACITY 4096
-#define IMPORTED_MODULES_INITIAL_CAPACITY 16;
+#define IMPORTED_MODULES_INITIAL_CAPACITY 16
 
 static inline bool define_op(module_t * module, operator_table_t * table, string_t * op, bool left2right, int precedence, string_t * var) {
     var_def_t * var_def = module_get_var(module, var);

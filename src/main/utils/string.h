@@ -44,11 +44,18 @@ static inline string_t * string_dup(string_t * from) {
     return to;
 }
 
-static inline string_t * string_concat(string_t * a, const char * b) {
-    size_t len_b = strlen(b);
-    string_t * to = string_new((int) (a->len + len_b));
+static inline string_t * string_concat2(string_t * a, string_t * b) {
+    string_t * to = string_new(a->len + b->len);
     memcpy(to->value, a->value, (size_t) a->len);
-    memcpy(&to->value[a->len], b, len_b);
+    memcpy(&to->value[a->len], b->value, (size_t) b->len);
+    return to;
+}
+
+static inline string_t * string_concat3(string_t * a, string_t * b, string_t * c) {
+    string_t * to = string_new(a->len + b->len + c->len);
+    memcpy(to->value, a->value, (size_t) a->len);
+    memcpy(&to->value[a->len], b->value, (size_t) b->len);
+    memcpy(&to->value[a->len+b->len], c->value, (size_t) c->len);
     return to;
 }
 

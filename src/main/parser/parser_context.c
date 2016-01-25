@@ -7,13 +7,13 @@
 #include "parser_context.h"
 
 static void init_prelude(module_t * module) {
-    module_define_type(module, TYPE_INFO_UNIT->name, TYPE_INFO_UNIT);
-    module_define_type(module, TYPE_INFO_BOOL->name, TYPE_INFO_BOOL);
-    module_define_type(module, TYPE_INFO_INT->name, TYPE_INFO_INT);
-    module_define_type(module, TYPE_INFO_LONG->name, TYPE_INFO_LONG);
-    module_define_type(module, TYPE_INFO_DOUBLE->name, TYPE_INFO_DOUBLE);
-    module_define_type(module, TYPE_INFO_STRING->name, TYPE_INFO_STRING);
-    module_define_type(module, TYPE_INFO_FUN->name, TYPE_INFO_STRING);
+    module_define_type(module, TYPE_INFO_UNIT);
+    module_define_type(module, TYPE_INFO_BOOL);
+    module_define_type(module, TYPE_INFO_INT);
+    module_define_type(module, TYPE_INFO_LONG);
+    module_define_type(module, TYPE_INFO_DOUBLE);
+    module_define_type(module, TYPE_INFO_STRING);
+    module_define_type(module, TYPE_INFO_STRING);
 
     module_define_var(module, STRING("__ne"), NULL);
     module_define_binary(module, STRING("!="), true, 5, STRING("__ne"));

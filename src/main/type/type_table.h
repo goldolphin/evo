@@ -21,9 +21,7 @@ void type_table_init(type_table_t *table, size_t initial_capacity);
 
 void type_table_destroy(type_table_t * table);
 
-void type_table_declare(type_table_t *table, string_t * name);
-
-bool type_table_define(type_table_t *table, string_t * name, type_info_t * info);
+bool type_table_define(type_table_t *table, type_info_t * info);
 
 type_t * type_table_get(type_table_t *table, string_t * name);
 
