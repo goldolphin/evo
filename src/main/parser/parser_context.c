@@ -30,8 +30,8 @@ static void init_prelude(module_t * module) {
     module_define_var(module, STRING("__ge"), NULL);
     module_define_binary(module, STRING(">="), true, 5, STRING("__ge"));
 
-    module_define_var(module, STRING("__re"), NULL);
-    module_define_binary(module, STRING("%"), true, 5, STRING("__re"));
+    module_define_var(module, STRING("__rem"), NULL);
+    module_define_binary(module, STRING("%"), true, 5, STRING("__rem"));
 
     module_define_var(module, STRING("__add"), NULL);
     module_define_binary(module, STRING("+"), true, 5, STRING("__add"));

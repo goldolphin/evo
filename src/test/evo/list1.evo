@@ -22,8 +22,8 @@ let print = fun(l: List): Unit (
     let loop = fun(head: List): Unit (
         if(head != nil, (
             if(head != l, printf(", "))
-            printf("%d", List_get_value(head))
-            loop(List_get_tail(head)))
+            printf("%d", head.value)
+            loop(head.tail))
         )
     )
     loop(l)
@@ -31,12 +31,12 @@ let print = fun(l: List): Unit (
 )
 
 let reverse = fun(l: List): List (
-    if (l == nil || List_get_tail(l) == nil,
+    if (l == nil || l.tail == nil,
         l, (
         let loop = fun(l: List, r: List): List (
             if (l == nil,
                 r,
-                loop(List_get_tail(l), cons(List_get_value(l), r))
+                loop(l.tail, cons(l.value, r))
             )
         )
         loop(l, nil))
@@ -48,25 +48,25 @@ let append = fun(left: List, right: List): List (
         right,
         if(right == nil,
             left,
-            cons(List_get_value(left), append(List_get_tail(left), right))
+            cons(left.value, append(left.tail, right))
         )
     )
 )
 
 let sort = fun(l: List): List (
-    if (l == nil || List_get_tail(l) == nil,
+    if (l == nil || l.tail == nil,
         l, (
-        let pivot = List_get_value(l)
+        let pivot = l.value
         let sort0 = fun(head: List, less: List, greater: List): List (
             if(head == nil,
                 append(sort(less), cons(pivot, sort(greater))),
-                if(List_get_value(head) < pivot,
-                    sort0(List_get_tail(head), cons(List_get_value(head), less), greater),
-                    sort0(List_get_tail(head), less, cons(List_get_value(head), greater))
+                if(head.value < pivot,
+                    sort0(head.tail, cons(head.value, less), greater),
+                    sort0(head.tail, less, cons(head.value, greater))
                 )
             )
         )
-        sort0(List_get_tail(l), nil, nil))
+        sort0(l.tail, nil, nil))
     )
 )
 

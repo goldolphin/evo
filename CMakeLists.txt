@@ -18,13 +18,16 @@ add_library(type STATIC src/main/type/type.c src/main/type/type.h src/main/type/
         src/main/type/type_table.c src/main/type/type_table.h src/main/type/fun_table.c src/main/type/fun_table.h)
 target_link_libraries(type utils)
 
+add_library(ir STATIC src/main/ir/ir.c src/main/ir/ir.h src/main/ir/ir_define.def)
+target_link_libraries(ir utils)
+
 add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h src/main/parser/token_stream.c src/main/parser/token_stream.h
-        src/main/parser/ast.c src/main/parser/ast.h src/main/parser/ast_define.def src/main/parser/utils.h
+        src/main/parser/utils.h
         src/main/parser/module/module.c src/main/parser/module/module.h src/main/parser/module/symbol_table.c src/main/parser/module/symbol_table.h
         src/main/parser/module/operator_table.c src/main/parser/module/operator_table.h src/main/parser/module/var_table.c src/main/parser/module/var_table.h src/main/parser/parser_context.c src/main/parser/parser_context.h)
-target_link_libraries(parser lexer type)
+target_link_libraries(parser lexer ir type)
 
-add_library(interpreter STATIC src/main/interpreter/environment.c src/main/interpreter/environment.h)
+add_library(interpreter STATIC src/main/interpreter/env.c src/main/interpreter/env.h)
 target_link_libraries(interpreter parser)
 
 add_executable(array src/test/c/array.c)

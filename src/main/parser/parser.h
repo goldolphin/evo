@@ -6,7 +6,7 @@
 #ifndef EVO_PARSER_H
 #define EVO_PARSER_H
 
-#include "ast.h"
+#include <ir/ir.h>
 #include "token_stream.h"
 #include "parser_context.h"
 
@@ -17,6 +17,6 @@ void parser_init(parser_t * parser);
 
 void parser_destroy(parser_t * parser);
 
-ast_statement_t * parser_parse(parser_t * parser, parser_context_t * context, token_stream_t * stream);
+ir_statement_t * parser_parse(parser_t * parser, parser_context_t * context, token_stream_t * stream);
 
 #endif //EVO_PARSER_H

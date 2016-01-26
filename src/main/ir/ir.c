@@ -4,14 +4,13 @@
  */
 
 #include <utils/memory.h>
-#include "ast.h"
-#include "type/struct.h"
+#include "ir.h"
 
-static bool sbuilder_var_declare(sbuilder_t * builder, ast_var_declare_t * var_declare) {
+static bool sbuilder_var_declare(sbuilder_t * builder, ir_var_declare_t * var_declare) {
     return sbuilder_string(builder, var_declare->name);
 }
 
-static bool sbuilder_var_declare_list(sbuilder_t * builder, ast_var_declare_list_t * var_declare_list) {
+static bool sbuilder_var_declare_list(sbuilder_t * builder, ir_var_declare_list_t * var_declare_list) {
     if (var_declare_list == NULL) {
         return sbuilder_str(builder, "NULL");
     }
@@ -37,19 +36,13 @@ static void print_string(int level, string_t * str) {
     print_indent(level, builder.buf);
 }
 
-static void print_var_declare(int level, ast_var_declare_t * var_declare) {
-    SBUILDER(builder, 1024);
-    sbuilder_var_declare(&builder, var_declare);
-    print_indent(level, builder.buf);
-}
-
-static void print_var_declare_list(int level, ast_var_declare_list_t * var_declare_list) {
+static void print_var_declare_list(int level, ir_var_declare_list_t * var_declare_list) {
     SBUILDER(builder, 1024);
     sbuilder_var_declare_list(&builder, var_declare_list);
     print_indent(level, builder.buf);
 }
 
-static void print_statement_list(int level, ast_statement_list_t * statement_list) {
+static void print_statement_list(int level, ir_statement_list_t * statement_list) {
     if (statement_list == NULL) {
         return;
     }
@@ -57,7 +50,7 @@ static void print_statement_list(int level, ast_statement_list_t * statement_lis
     print_statement_list(level, statement_list->next);
 }
 
-static void print_expr_list(int level, ast_expr_list_t * expr_list) {
+static void print_expr_list(int level, ir_expr_list_t * expr_list) {
     if (expr_list == NULL) {
         return;
     }
@@ -65,23 +58,17 @@ static void print_expr_list(int level, ast_expr_list_t * expr_list) {
     print_expr_list(level, expr_list->next);
 }
 
-static void print_import(int level, ast_import_t * import) {
+static void print_import(int level, ir_import_t * import) {
     print_indent(level, "import");
     print_string(level+1, import->module_name);
 }
 
-static void print_struct(int level, ast_struct_t * s) {
+static void print_struct(int level, ir_struct_t * s) {
     print_indent(level, "struct");
     print_var_declare_list(level+1, s->members);
 }
 
-static void print_let(int level, ast_let_t * let) {
-    print_indent(level, "let");
-    print_var_declare(level+1, let->var);
-    print_statement(level+1, &let->expr->super);
-}
-
-static void print_fun(int level, ast_fun_t * fun) {
+static void print_fun(int level, ir_fun_t * fun) {
     SBUILDER(builder, 1024);
     sbuilder_format(&builder, "fun(%d)", fun->param_num);
     print_indent(level, builder.buf);
@@ -89,19 +76,19 @@ static void print_fun(int level, ast_fun_t * fun) {
     print_statement(level+1, &fun->body->super);
 }
 
-static void print_block(int level, ast_block_t * block) {
+static void print_block(int level, ir_block_t * block) {
     print_indent(level, "block");
     print_statement_list(level+1, block->statements);
     print_statement(level+1, &block->the_last->super);
 }
 
-static void print_fun_apply(int level, ast_fun_apply_t * fun_apply) {
+static void print_fun_apply(int level, ir_fun_apply_t * fun_apply) {
     print_indent(level, "fun_apply");
     print_statement(level+1, &fun_apply->function->super);
     print_expr_list(level+1, fun_apply->operands);
 }
 
-static void print_ref(int level, ast_ref_t * ref) {
+static void print_ref(int level, ir_ref_t * ref) {
     SBUILDER(builder, 1024);
     sbuilder_format(&builder, "ref(%d, %d, ", ref->level, ref->index);
     sbuilder_string(&builder, ref->name);
@@ -109,7 +96,7 @@ static void print_ref(int level, ast_ref_t * ref) {
     print_indent(level, builder.buf);
 }
 
-static void print_struct_ref(int level, ast_struct_ref_t * ref) {
+static void print_struct_ref(int level, ir_struct_ref_t * ref) {
     SBUILDER(builder, 1024);
     sbuilder_format(&builder, "struct_ref(%d, ", ref->index);
     sbuilder_string(&builder, ref->name);
@@ -118,7 +105,13 @@ static void print_struct_ref(int level, ast_struct_ref_t * ref) {
     print_statement(level+1, &ref->base->super);
 }
 
-static void print_str(int level, ast_str_t * str) {
+static void print_let(int level, ir_let_t * let) {
+    print_indent(level, "let");
+    print_ref(level+1, let->ref);
+    print_statement(level+1, &let->expr->super);
+}
+
+static void print_str(int level, ir_str_t * str) {
     SBUILDER(builder, 1024);
     sbuilder_str(&builder, "str(");
     sbuilder_string(&builder, str->value);
@@ -126,23 +119,23 @@ static void print_str(int level, ast_str_t * str) {
     print_indent(level, builder.buf);
 }
 
-static void print_double(int level, ast_double_t * d) {
+static void print_double(int level, ir_double_t * d) {
     SBUILDER(builder, 1024);
     sbuilder_format(&builder, "double(%lf)", d->value);
     print_indent(level, builder.buf);
 }
 
-static void print_long(int level, ast_long_t * d) {
+static void print_long(int level, ir_long_t * d) {
     SBUILDER(builder, 1024);
     sbuilder_format(&builder, "long(%ld)", d->value);
     print_indent(level, builder.buf);
 }
 
-const char *ast_type_name(ast_category_t category) {
+const char *ir_type_name(ir_category_t category) {
     switch (category) {
-#define AST_DEF(a, b, c, d) case a: return #a;
-#include "ast_define.def"
-#undef AST_DEF
+#define IR_DEF(a, b, c, d) case a: return #a;
+#include "ir_define.def"
+#undef IR_DEF
         default: return NULL;
     }
 }
@@ -153,20 +146,20 @@ enum {
     EXPR,
 };
 
-bool ast_is_expr(ast_category_t category) {
+bool ir_is_expr(ir_category_t category) {
     switch (category) {
-#define AST_DEF(a, b, c, d) case a: return c == EXPR;
-#include "ast_define.def"
-#undef AST_DEF
+#define IR_DEF(a, b, c, d) case a: return c == EXPR;
+#include "ir_define.def"
+#undef IR_DEF
         default: return false;
     }
 }
 
-void print_statement(int level, ast_statement_t * statement) {
+void print_statement(int level, ir_statement_t * statement) {
     switch (statement->category) {
-#define AST_DEF(a, b, c, d) case a: print_##d(level, (void *)statement); break;
-#include "ast_define.def"
-#undef AST_DEF
+#define IR_DEF(a, b, c, d) case a: print_##d(level, (void *)statement); break;
+#include "ir_define.def"
+#undef IR_DEF
         default: break;
     }
 }

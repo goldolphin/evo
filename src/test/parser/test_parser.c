@@ -20,7 +20,7 @@ void test_str(const char * str) {
     // parser_context_add_module(&context, STRING("test"));
 
     while (true) {
-        ast_statement_t *statement = parser_parse(&parser, &context, &ts);
+        ir_statement_t *statement = parser_parse(&parser, &context, &ts);
         if (statement == NULL) break;
         print_statement(0, statement);
     }
@@ -40,7 +40,7 @@ void test_file(const char * filename) {
     // parser_context_add_module(&context, STRING("test"));
 
     while (true) {
-        ast_statement_t *statement = parser_parse(&parser, &context, &ts);
+        ir_statement_t *statement = parser_parse(&parser, &context, &ts);
         if (statement == NULL) break;
         print_statement(0, statement);
     }

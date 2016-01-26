@@ -1,0 +1,12 @@
+IR_DEF(IR_IMPORT,             ir_import_t,             STATEMENT,   import)
+IR_DEF(IR_STRUCT,             ir_struct_t,             STATEMENT,   struct)
+IR_DEF(IR_LET,                ir_let_t,                STATEMENT,   let)
+
+IR_DEF(IR_FUN,                ir_fun_t,                EXPR,        fun)
+IR_DEF(IR_BLOCK,              ir_block_t,              EXPR,        block)
+IR_DEF(IR_FUN_APPLY,          ir_fun_apply_t,          EXPR,        fun_apply)
+IR_DEF(IR_REF,                ir_ref_t,                EXPR,        ref)
+IR_DEF(IR_STRUCT_REF,         ir_ref_t,                EXPR,        struct_ref)
+IR_DEF(IR_STR,                ir_str_t,                EXPR,        str)
+IR_DEF(IR_DOUBLE,             ir_double_t,             EXPR,        double)
+IR_DEF(IR_LONG,               ir_long_t,               EXPR,        long)
