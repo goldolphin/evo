@@ -6,12 +6,12 @@
 #include <string.h>
 #include "string.h"
 
-void string_init(string_t *str, uint8_t *value, int len) {
+void string_init(string_t *str, char *value, size_t len) {
     str->value = value;
     str->len = len;
 }
 
-bool string_equals_u(string_t * str, uint8_t *value, int len) {
+bool string_equals_s(string_t *str, char *value, size_t len) {
     return str->len == len && memcmp(str->value, value, (size_t) len) == 0;
 }
 
@@ -25,7 +25,7 @@ bool string_equals_c(string_t * str, const char * s) {
 }
 
 bool string_equals(string_t * str1, string_t * str2) {
-    return string_equals_u(str1, str2->value, str2->len);
+    return string_equals_s(str1, str2->value, str2->len);
 }
 
 bool sbuilder_string(sbuilder_t * builder, string_t * str) {

@@ -185,7 +185,7 @@ bool parse_cid(token_stream_t * stream, sbuilder_t * builder) {
 }
 
 #define BUF(buf) SBUILDER(buf, 1024)
-#define BUF2STR(buf, str) string_t str; string_init(&str, (uint8_t *)buf.buf, (int)sbuilder_len(&buf))
+#define BUF2STR(buf, str) string_t str; string_init(&str, buf.buf, sbuilder_len(&buf))
 
 ast_expr_t * parse_expr(parser_context_t * context, token_stream_t * stream);
 

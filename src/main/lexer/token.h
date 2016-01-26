@@ -25,7 +25,7 @@ const char *token_type_name(token_type_t type);
 
 const char *token_type_value(token_type_t type);
 
-void token_init(token_t * token, token_type_t type, uint8_t *value, int value_len);
+void token_init(token_t * token, token_type_t type, char *value, int value_len);
 
 bool sbuilder_token(sbuilder_t * builder, token_t * token);
 

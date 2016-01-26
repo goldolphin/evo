@@ -37,7 +37,7 @@ bool sbuilder_char(sbuilder_t * builder, char c) {
     return true;
 }
 
-bool sbuilder_nstr(sbuilder_t * builder, const char * s, int n) {
+bool sbuilder_nstr(sbuilder_t * builder, const char * s, size_t n) {
     size_t left = builder->capacity - builder->len;
     if (n > left-1) {
         return false;

@@ -17,6 +17,7 @@ void test_str(const char * str) {
     parser_init(&parser);
     parser_context_t context;
     parser_context_init(&context, 64);
+    // parser_context_add_module(&context, STRING("test"));
 
     while (true) {
         ast_statement_t *statement = parser_parse(&parser, &context, &ts);
@@ -36,6 +37,7 @@ void test_file(const char * filename) {
     parser_init(&parser);
     parser_context_t context;
     parser_context_init(&context, 64);
+    // parser_context_add_module(&context, STRING("test"));
 
     while (true) {
         ast_statement_t *statement = parser_parse(&parser, &context, &ts);

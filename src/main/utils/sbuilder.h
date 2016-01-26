@@ -58,7 +58,7 @@ static inline bool sbuilder_str(sbuilder_t * builder, const char * s) {
     return sbuilder_format(builder, "%s", s);
 }
 
-bool sbuilder_nstr(sbuilder_t * builder, const char * s, int n);
+bool sbuilder_nstr(sbuilder_t * builder, const char * s, size_t n);
 
 #ifndef VNAME
 #define CONCATE0(x, y) x##y

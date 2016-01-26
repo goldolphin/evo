@@ -11,7 +11,7 @@
 #include "character.h"
 #include "char_stream.h"
 
-static token_t s_token_end = {TOKEN_END, {(uint8_t *) "end", 3}};
+static token_t s_token_end = {TOKEN_END, {"end", 3}};
 
 static token_type_t keywords[] = {
         TOKEN_IMPORT,
@@ -51,8 +51,8 @@ void lexer_init(lexer_t * lexer) {
     for (int i = 0; i < keyword_num; ++i) {
         token_t * token = new_data(token_t);
         const char * value = token_type_value(keywords[i]);
-        token_init(token, keywords[i], (uint8_t *) value, (int) strlen(value));
-        matcher_pattern_init(&lexer->keywords[i], token->value.value, token->value.len, token);
+        token_init(token, keywords[i], (char *) value, (int) strlen(value));
+        matcher_pattern_init(&lexer->keywords[i], (uint8_t *) token->value.value, token->value.len, token);
     }
     matcher_init(&lexer->keyword_matcher, lexer->keywords, keyword_num);
 
@@ -60,7 +60,7 @@ void lexer_init(lexer_t * lexer) {
     lexer->punctuations = new_array(token_t, punctuation_num);
     for (int i = 0; i < punctuation_num; ++i) {
         const char * value = token_type_value(punctuations[i]);
-        token_init(&lexer->punctuations[i], punctuations[i], (uint8_t *)value, (int)strlen(value));
+        token_init(&lexer->punctuations[i], punctuations[i], (char *) value, (int)strlen(value));
     }
 }
 
@@ -81,7 +81,7 @@ void lexer_init_context(lexer_t * lexer, lexer_context_t * context) {
 static inline token_t * parse_punctuation(lexer_t * lexer, uint8_t c) {
     int punctuation_num = (int) array_size(punctuations);
     for (int i = 0; i < punctuation_num; ++i) {
-        if (string_equals_u(&lexer->punctuations[i].value, &c, 1)) {
+        if (string_equals_s(&lexer->punctuations[i].value, (char *) &c, 1)) {
             return &lexer->punctuations[i];
         }
     }
@@ -251,7 +251,7 @@ token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t *
         // Parse string literals.
         if (c.c == '"') {
             if (parse_string(stream, context)) {
-                token_init(&context->token, TOKEN_STRING, context->buf, context->buf_len);
+                token_init(&context->token, TOKEN_STRING, (char *) context->buf, context->buf_len);
                 return &context->token;
             }
             print_error("Invalid string", stream, context);
@@ -263,9 +263,9 @@ token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t *
             bool is_double;
             if (parse_number(stream, context, &is_double)) {
                 if (is_double) {
-                    token_init(&context->token, TOKEN_DOUBLE, context->buf, context->buf_len);
+                    token_init(&context->token, TOKEN_DOUBLE, (char *) context->buf, context->buf_len);
                 } else {
-                    token_init(&context->token, TOKEN_LONG, context->buf, context->buf_len);
+                    token_init(&context->token, TOKEN_LONG, (char *) context->buf, context->buf_len);
                 }
                 return &context->token;
             }
@@ -292,7 +292,7 @@ token_t * lexer_poll(lexer_t * lexer, lexer_context_t * context, char_stream_t *
         while (true) {
             bool_char_t next = char_stream_peek(stream, 0);
             if (!next.success || !is_identifier_letter(next.c) || is_regular_identifier_letter(next.c) != is_regular) {
-                token_init(&context->token, TOKEN_ID, context->buf, context->buf_len);
+                token_init(&context->token, TOKEN_ID, (char *) context->buf, context->buf_len);
                 return &context->token;
             }
             buffer_add(context, next.c);

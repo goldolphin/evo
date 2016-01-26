@@ -11,15 +11,15 @@
 #include "memory.h"
 
 typedef struct {
-    uint8_t * value;
-    int len;
+    char * value;
+    size_t len;
 } string_t;
 
-#define STRING(str) (&(string_t){(uint8_t *) str, sizeof(str)-1})
+#define STRING(str) (&(string_t){str, sizeof(str)-1})
 
-void string_init(string_t *str, uint8_t *value, int len);
+void string_init(string_t *str, char *value, size_t len);
 
-bool string_equals_u(string_t * str, uint8_t *value, int len);
+bool string_equals_s(string_t *str, char *value, size_t len);
 
 bool string_equals_c(string_t * str, const char * s);
 
@@ -31,8 +31,8 @@ size_t string_hash_func (void * key);
 
 bool string_equal_func (void * key1, void * key2);
 
-static inline string_t * string_new(int len) {
-    uint8_t * s = new_array(uint8_t, len);
+static inline string_t * string_new(size_t len) {
+    char * s = new_array(char, len);
     string_t * str = new_data(string_t);
     string_init(str, s, len);
     return str;
