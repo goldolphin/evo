@@ -299,33 +299,6 @@ ir_statement_t * parse_statement(parser_context_t * context, token_stream_t * st
     return &expr->super;
 }
 
-ir_fun_t * parse_fun(parser_context_t * context, token_stream_t * stream) {
-    require_token(token_stream_poll(stream), TOKEN_FUN, stream);
-
-    require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
-    ir_var_declare_list_t * params = parse_var_declare_list(stream);
-    require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
-
-    parser_context_enter_scope(context);
-    // Add parameter into scope.
-    int param_num = 0;
-    for (ir_var_declare_list_t * head = params; head != NULL; head = head->next) {
-        define_var(context, head->var->name, stream);
-        ++ param_num;
-    }
-
-    if (token_stream_peek(stream)->type == TOKEN_COLON) {
-        token_stream_poll(stream);
-        parse_type(stream);
-    }
-
-    ir_expr_t * body = parse_expr(context, stream);
-    parser_context_exit_scope(context);
-
-    require(body != NULL, "Need body", stream);
-    return make_fun(param_num, params, body);
-}
-
 static bool parse_block_rec(parser_context_t * context, token_stream_t * stream, ir_statement_list_t ** p_statements, ir_expr_t ** p_the_last) {
     ir_statement_t * statement = parse_statement(context, stream);
     if (statement == NULL) {
@@ -352,6 +325,38 @@ ir_block_t * parse_block(parser_context_t * context, token_stream_t * stream) {
     require(parse_block_rec(context, stream, &statements, &the_last), "Need block", stream);
     require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
     return make_block(statements, the_last);
+}
+
+ir_fun_t * parse_fun(parser_context_t * context, token_stream_t * stream) {
+    require_token(token_stream_poll(stream), TOKEN_FUN, stream);
+
+    require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
+    ir_var_declare_list_t * params = parse_var_declare_list(stream);
+    require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
+
+    parser_context_enter_scope(context);
+    // Add parameter into scope.
+    int param_num = 0;
+    for (ir_var_declare_list_t * head = params; head != NULL; head = head->next) {
+        define_var(context, head->var->name, stream);
+        ++ param_num;
+    }
+
+    if (token_stream_peek(stream)->type == TOKEN_COLON) {
+        token_stream_poll(stream);
+        parse_type(stream);
+    }
+
+    ir_expr_t * body;
+    if (token_stream_peek(stream)->type == TOKEN_LPAREN) {
+        body = &parse_block(context, stream)->super;
+    } else {
+        body = parse_expr(context, stream);
+    }
+    parser_context_exit_scope(context);
+
+    require(body != NULL, "Need body", stream);
+    return make_fun(param_num, params, body);
 }
 
 ir_str_t * parse_str(token_stream_t * stream) {
@@ -434,7 +439,10 @@ ir_expr_t * parse_term(parser_context_t * context, token_stream_t * stream) {
         case TOKEN_FUN:
             return &parse_fun(context, stream)->super;
         case TOKEN_LPAREN:
-            return &parse_block(context, stream)->super;
+            parser_context_enter_scope(context);
+            ir_expr_t *expr = &parse_block(context, stream)->super;
+            parser_context_exit_scope(context);
+            return expr;
         case TOKEN_STRING:
             return &parse_str(stream)->super;
         case TOKEN_DOUBLE:
