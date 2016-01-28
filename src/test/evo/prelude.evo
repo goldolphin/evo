@@ -1,0 +1,21 @@
+define_prefix(-, __neg, 2)
+define_prefix(!, __not, 2)
+
+define_binary(*, __mul, left, 3)
+define_binary(/, __div, left, 3)
+define_binary(%, __rem, left, 3)
+
+define_binary(+, __add, left, 4)
+define_binary(-, __sub, left, 4)
+
+define_binary(<, __lt, left, 6)
+define_binary(>, __gt, left, 6)
+define_binary(<=, __le, left, 6)
+define_binary(>=, __ge, left, 6)
+
+define_binary(==, __eq, left, 7)
+define_binary(!=, __ne, left, 7)
+
+define_binary(&&, __and, left, 11)
+
+define_binary(||, __or, left, 12)

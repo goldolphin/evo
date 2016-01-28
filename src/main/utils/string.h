@@ -39,6 +39,7 @@ static inline string_t * string_new(size_t len) {
 }
 
 static inline string_t * string_dup(string_t * from) {
+    if (from == NULL) return NULL;
     string_t * to = string_new(from->len);
     memcpy(to->value, from->value, (size_t) from->len);
     return to;

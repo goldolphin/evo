@@ -179,7 +179,7 @@ hashmap_iterator_t hashmap_next(hashmap_t * map, hashmap_iterator_t iter) {
     return find_valid_entry(map, &iter[1]);
 }
 
-void hashmap_iterator_get(hashmap_entry_t *iter, pair_t *key_value) {
+void hashmap_iterator_get(hashmap_iterator_t iter, pair_t *key_value) {
     pair_copy(key_value, &iter->key_value);
 }
 
