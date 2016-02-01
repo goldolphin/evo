@@ -8,7 +8,7 @@ include_directories(src/main)
 
 add_library(utils STATIC src/main/utils/memory.h src/main/utils/matcher.h src/main/utils/matcher.c src/main/utils/sbuilder.h src/main/utils/sbuilder.c
         src/main/utils/string.c src/main/utils/string.h src/main/utils/pair.c src/main/utils/pair.h src/main/utils/hashmap.c src/main/utils/hashmap.h
-        src/main/utils/stack.h src/main/utils/list.h src/main/utils/vector.c src/main/utils/vector.h)
+        src/main/utils/stack.h src/main/utils/list.c src/main/utils/list.h src/main/utils/vector.c src/main/utils/vector.h)
 
 add_library(lexer STATIC src/main/lexer/character.h src/main/lexer/character.c src/main/lexer/lexer.h src/main/lexer/lexer.c
         src/main/lexer/token.c src/main/lexer/token.h src/main/lexer/token_define.def src/main/lexer/char_stream.c src/main/lexer/char_stream.h src/main/lexer/file_char_stream.c src/main/lexer/file_char_stream.h src/main/lexer/source_info.c src/main/lexer/source_info.h src/main/lexer/basic_char_stream.c src/main/lexer/basic_char_stream.h)
@@ -22,7 +22,7 @@ add_library(ir STATIC src/main/ir/ir.c src/main/ir/ir.h src/main/ir/ir_define.de
 target_link_libraries(ir utils)
 
 add_library(parser STATIC src/main/parser/parser.c src/main/parser/parser.h src/main/parser/token_stream.c src/main/parser/token_stream.h
-        src/main/parser/utils.h src/main/parser/ast.c src/main/parser/ast.h src/main/parser/symbol_table.c src/main/parser/symbol_table.h src/main/parser/ps_module.c src/main/parser/ps_module.h src/main/parser/ps_context.c src/main/parser/ps_context.h)
+        src/main/parser/utils.h src/main/parser/ast.c src/main/parser/ast.h src/main/parser/symbol_table.c src/main/parser/symbol_table.h src/main/parser/ps_module.c src/main/parser/ps_module.h src/main/parser/ps_context.c src/main/parser/ps_context.h src/main/parser/symbol_name.c src/main/parser/symbol_name.h)
 target_link_libraries(parser lexer)
 
 add_library(interpreter STATIC src/main/interpreter/env.c src/main/interpreter/env.h)

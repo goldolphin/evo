@@ -25,6 +25,8 @@ bool string_equals_c(string_t * str, const char * s) {
 }
 
 bool string_equals(string_t * str1, string_t * str2) {
+    if (str1 == str2) return true;
+    if (str1 == NULL || str2 == NULL) return false;
     return string_equals_s(str1, str2->value, str2->len);
 }
 

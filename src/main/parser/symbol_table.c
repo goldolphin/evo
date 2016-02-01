@@ -85,7 +85,7 @@ symbol_info_t * symbol_table_add_symbol(symbol_table_t * table, string_t * name)
     table->symbol_list = symbol_info_entry_new(table->info_size, table->index, name, table->symbol_list);
     hashmap_put(&scope->symbol_map, table->symbol_list->info->name, table->symbol_list->info);
     ++ table->index;
-    return NULL;
+    return table->symbol_list->info;
 }
 
 symbol_info_t * symbol_table_get_symbol(symbol_table_t * table, string_t * name) {
