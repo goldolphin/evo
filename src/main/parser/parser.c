@@ -6,6 +6,7 @@
 #include <lexer/token.h>
 #include "parser.h"
 #include "utils.h"
+#include "ast.h"
 
 #define SYMBOL_TABLE_INITIAL_CAPACITY 4096
 
@@ -127,10 +128,35 @@ ast_fun_apply_t * make_fun_apply(ast_expr_t * function, ast_expr_list_t * operan
     return fun_apply;
 }
 
-ast_ref_t * make_ref(ast_id_t * name) {
+ast_ref_t * make_ref(var_def_t * var) {
     ast_ref_t * ref = new_data(ast_ref_t);
     expr_init(&ref->super, AST_REF);
-    ref->name = name;
+    ref->var = var;
+    return ref;
+}
+
+ast_prefix_t * make_prefix(operator_def_t * op, ast_expr_t * right) {
+    ast_prefix_t * ref = new_data(ast_prefix_t);
+    expr_init(&ref->super, AST_PREFIX);
+    ref->op = op;
+    ref->right = right;
+    return ref;
+}
+
+ast_postfix_t * make_postfix(operator_def_t * op, ast_expr_t * left) {
+    ast_postfix_t * ref = new_data(ast_postfix_t);
+    expr_init(&ref->super, AST_PREFIX);
+    ref->op = op;
+    ref->left = left;
+    return ref;
+}
+
+ast_binary_t * make_binary(operator_def_t * op, ast_expr_t * left, ast_expr_t * right) {
+    ast_binary_t * ref = new_data(ast_binary_t);
+    expr_init(&ref->super, AST_PREFIX);
+    ref->op = op;
+    ref->left = left;
+    ref->right = right;
     return ref;
 }
 
@@ -145,8 +171,8 @@ ast_struct_ref_t * make_struct_ref(ast_expr_t * base, int index, string_t * name
 
 // Parsers
 
-#define BUF(buf) SBUILDER(buf, 1024)
-#define BUF2STR(buf, str) string_t str; string_init(&str, buf.buf, sbuilder_len(&buf))
+#define BUF(builder) SBUILDER(builder, 1024)
+#define BUF2STR(builder, str) string_t str; string_init(&str, builder.buf, sbuilder_len(&builder))
 
 ast_id_t * parse_id(token_stream_t * stream) {
     token_t *token = token_stream_peek(stream);
@@ -157,22 +183,26 @@ ast_id_t * parse_id(token_stream_t * stream) {
     return make_id(NULL, &token->value);
 }
 
-ast_id_t * parse_cid(token_stream_t * stream) {
-    BUF(prefix_buf);
-    BUF(base_buf);
+void parse_cid0(token_stream_t * stream, sbuilder_t * prefix_buf, sbuilder_t * base_buf) {
     while (true) {
         token_t *token = token_stream_peek(stream);
         if (token->type != TOKEN_ID) {
             break;
         }
-        if (sbuilder_len(&base_buf) > 0) {
-            if (sbuilder_len(&prefix_buf) > 0) sbuilder_str(&prefix_buf, ".");
-            sbuilder_str(&prefix_buf, base_buf.buf);
-            sbuilder_reset(&base_buf);
-            sbuilder_string(&base_buf, &token->value);
+        if (sbuilder_len(base_buf) > 0) {
+            if (sbuilder_len(prefix_buf) > 0) sbuilder_str(prefix_buf, ".");
+            sbuilder_str(prefix_buf, base_buf->buf);
+            sbuilder_reset(base_buf);
         }
+        sbuilder_string(base_buf, &token->value);
         token_stream_poll(stream);
     }
+}
+
+ast_id_t * parse_cid(token_stream_t * stream) {
+    BUF(prefix_buf);
+    BUF(base_buf);
+    parse_cid0(stream, &prefix_buf, &base_buf);
     if (sbuilder_len(&base_buf) > 0) {
         BUF2STR(base_buf, base);
         if (sbuilder_len(&prefix_buf) > 0) {
@@ -361,10 +391,22 @@ ast_fun_apply_t * parse_fun_apply(ast_expr_t * function, token_stream_t * stream
     return make_fun_apply(function, operands);
 }
 
-ast_ref_t * parse_ref(token_stream_t * stream) {
-    ast_id_t * name = parse_cid(stream);
-    require(name != NULL, "Need cid", stream);
-    return make_ref(name);
+ast_ref_t * parse_ref(ps_context_t * context, token_stream_t * stream) {
+    BUF(prefix_buf);
+    BUF(base_buf);
+    parse_cid0(stream, &prefix_buf, &base_buf);
+    require(sbuilder_len(&base_buf) > 0, "Need cid", stream);
+
+    BUF2STR(base_buf, base);
+    if (sbuilder_len(&prefix_buf) > 0) {
+        BUF2STR(prefix_buf, prefix);
+        var_def_t *var = ps_context_get_var(context, &prefix, &base);
+        require(var != NULL, "Need var", stream);
+        return make_ref(var);
+    }
+    var_def_t *var = ps_context_get_var(context, NULL, &base);
+    require(var != NULL, "Need var", stream);
+    return make_ref(var);
 }
 
 ast_struct_ref_t * parse_struct_ref(ast_expr_t * base, token_stream_t * stream) {
@@ -378,7 +420,7 @@ ast_struct_ref_t * parse_struct_ref(ast_expr_t * base, token_stream_t * stream) 
     return make_struct_ref(base, index, string_dup(&token->value));
 }
 
-ast_expr_t * parse_term(token_stream_t * stream) {
+ast_expr_t * parse_term(ps_context_t * context, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
     switch (token->type) {
         case TOKEN_FUN:
@@ -392,18 +434,18 @@ ast_expr_t * parse_term(token_stream_t * stream) {
         case TOKEN_LONG:
             return &parse_long(stream)->super;
         case TOKEN_ID:
-            return &parse_ref(stream)->super;
+            return &parse_ref(context, stream)->super;
         default:
             return NULL;
     }
 }
 
-ast_expr_t * parse_primary(token_stream_t * stream) {
+ast_expr_t * parse_primary(ps_context_t * context, token_stream_t * stream) {
     ast_expr_t * left = NULL;
     while (true) {
         ast_expr_t * new_left = NULL;
         if (left == NULL) {
-            new_left = parse_term(stream);
+            new_left = parse_term(context, stream);
         } else {
             token_t * token = token_stream_peek(stream);
             switch (token->type) {
@@ -430,12 +472,28 @@ typedef struct {
     operator_def_t * op;
 } frame_t;
 
-static inline operator_def_t * parse_operator_def(operator_table_t * table, token_stream_t * stream) {
+static inline operator_def_t * parse_operator_def(ps_context_t * context, operator_type_t op_type, token_stream_t * stream) {
+    BUF(prefix_buf);
+    BUF(base_buf);
+    parse_cid0(stream, &prefix_buf, &base_buf);
+    require(sbuilder_len(&base_buf) > 0, "Need cid", stream);
+
+    BUF2STR(base_buf, base);
+    if (sbuilder_len(&prefix_buf) > 0) {
+        BUF2STR(prefix_buf, prefix);
+        var_def_t *var = ps_context_get_var(context, &prefix, &base);
+        require(var != NULL, "Need var", stream);
+        return make_ref(var);
+    }
+    var_def_t *var = ps_context_get_var(context, NULL, &base);
+    require(var != NULL, "Need var", stream);
+    return make_ref(var);
+
     token_t * token = token_stream_peek(stream);
     if (token->type != TOKEN_ID) {
         return NULL;
     }
-    operator_def_t * def = operator_table_get(table, &token->value);
+    operator_def_t * def = ps_context_get_op(context, op_type, NULL, &token->value);
     if (def != NULL) {
         token_stream_poll(stream);
         return def;
