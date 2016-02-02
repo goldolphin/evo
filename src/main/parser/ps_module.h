@@ -19,6 +19,10 @@ typedef struct {
     var_def_t * var;
 } operator_def_t;
 
+bool sbuilder_var_def(sbuilder_t * builder, var_def_t * def);
+
+bool sbuilder_operator_def(sbuilder_t * builder, operator_def_t * def);
+
 typedef enum {
     OPERATOR_TYPE_PREFIX,
     OPERATOR_TYPE_POSTFIX,

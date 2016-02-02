@@ -5,6 +5,7 @@
 
 #include <utils/memory.h>
 #include "ast.h"
+#include "ps_module.h"
 
 static bool sbuilder_id(sbuilder_t * builder, ast_id_t * id) {
     if (id->prefix != NULL) {
@@ -120,8 +121,36 @@ static void print_fun_apply(int level, ast_fun_apply_t * fun_apply) {
 static void print_ref(int level, ast_ref_t * ref) {
     SBUILDER(builder, 1024);
     sbuilder_str(&builder, "ref(");
-    sbuilder_id(&builder, ref->name);
+    sbuilder_var_def(&builder, ref->var);
     sbuilder_str(&builder, ")");
+    print_indent(level, builder.buf);
+}
+
+static void print_prefix(int level, ast_prefix_t * prefix) {
+    SBUILDER(builder, 1024);
+    sbuilder_str(&builder, "prefix(");
+    sbuilder_operator_def(&builder, prefix->op);
+    sbuilder_str(&builder, ")");
+    print_statement(level+1, &prefix->right->super);
+    print_indent(level, builder.buf);
+}
+
+static void print_postfix(int level, ast_postfix_t * postfix) {
+    SBUILDER(builder, 1024);
+    sbuilder_str(&builder, "postfix(");
+    sbuilder_operator_def(&builder, postfix->op);
+    sbuilder_str(&builder, ")");
+    print_statement(level+1, &postfix->left->super);
+    print_indent(level, builder.buf);
+}
+
+static void print_binary(int level, ast_binary_t * binary) {
+    SBUILDER(builder, 1024);
+    sbuilder_str(&builder, "binary(");
+    sbuilder_operator_def(&builder, binary->op);
+    sbuilder_str(&builder, ")");
+    print_statement(level+1, &binary->left->super);
+    print_statement(level+1, &binary->right->super);
     print_indent(level, builder.buf);
 }
 

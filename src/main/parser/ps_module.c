@@ -6,6 +6,15 @@
 #include <utils/string.h>
 #include "ps_module.h"
 
+bool sbuilder_var_def(sbuilder_t * builder, var_def_t * def) {
+    return sbuilder_symbol_info(builder, &def->super);
+}
+
+bool sbuilder_operator_def(sbuilder_t * builder, operator_def_t * def) {
+    sbuilder_symbol_info(builder, &def->super);
+    return sbuilder_format(builder, ", %s, %d", def->left2right ? "left" : "right", def->precedence);
+}
+
 void ps_module_init(ps_module_t * module, string_t * name) {
     module->name = string_dup(name);
     symbol_table_init(&module->var_table, sizeof(var_def_t));

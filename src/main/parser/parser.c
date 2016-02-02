@@ -6,7 +6,6 @@
 #include <lexer/token.h>
 #include "parser.h"
 #include "utils.h"
-#include "ast.h"
 
 #define SYMBOL_TABLE_INITIAL_CAPACITY 4096
 

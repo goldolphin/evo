@@ -136,3 +136,12 @@ symbol_info_t * symbol_table_get_imported_symbol(symbol_table_t * table, string_
     BUF2STR(buf, full_name);
     return symbol_scope_get_symbol(table->imported_scope, &full_name);
 }
+
+bool sbuilder_symbol_info(sbuilder_t * builder, symbol_info_t * info) {
+    sbuilder_format(builder, "%d, ", info->index);
+    if (info->from_name != NULL) {
+        sbuilder_string(builder, info->from_name);
+        sbuilder_str(builder, ".");
+    }
+    return sbuilder_string(builder, info->name);
+}

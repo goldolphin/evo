@@ -49,4 +49,6 @@ symbol_info_t * symbol_table_add_imported_symbol(symbol_table_t * table, string_
 
 symbol_info_t * symbol_table_get_imported_symbol(symbol_table_t * table, string_t * from_name, string_t * name);
 
+bool sbuilder_symbol_info(sbuilder_t * builder, symbol_info_t * info);
+
 #endif //EVO_SYMBOL_TABLE_H

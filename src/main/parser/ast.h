@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <utils/string.h>
+#include "ps_module.h"
 
 typedef enum {
 #define AST_DEF(a, b, c, d) a,
@@ -79,7 +80,23 @@ DEFINE_EXPR(ast_fun_apply_t,
 )
 
 DEFINE_EXPR(ast_ref_t,
-    ast_id_t * name;
+    var_def_t * var;
+)
+
+DEFINE_EXPR(ast_prefix_t,
+    operator_def_t * op;
+    ast_expr_t * right;
+)
+
+DEFINE_EXPR(ast_postfix_t,
+    operator_def_t * op;
+    ast_expr_t * left;
+)
+
+DEFINE_EXPR(ast_binary_t,
+    operator_def_t * op;
+    ast_expr_t * left;
+    ast_expr_t * right;
 )
 
 DEFINE_EXPR(ast_struct_ref_t,

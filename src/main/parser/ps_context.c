@@ -169,19 +169,19 @@ static operator_def_t * ps_context_get_imported_op1(ps_context_t * context, oper
     return NULL;
 }
 
-bool ps_context_add_var(ps_context_t * context, string_t * name) {
-    return ps_module_add_var(context->current_module, name);
+bool ps_context_add_op(ps_context_t * context, operator_type_t type, string_t * name, bool left2right, int precedence, var_def_t * var) {
+    return ps_module_add_op(context->current_module, type, name, left2right, precedence, var);
 }
 
-operator_def_t * ps_context_get_var(ps_context_t * context, string_t * from_name, string_t * name) {
+operator_def_t * ps_context_get_op(ps_context_t * context, operator_type_t type, string_t * from_name, string_t * name) {
     if (from_name == NULL) {
-        operator_def_t *def = ps_module_get_var(context->current_module, name);
+        operator_def_t *def = ps_module_get_op(context->current_module, type, name);
         if (def != NULL) return def;
-        return ps_context_get_imported_var0(context, name);
+        return ps_context_get_imported_op0(context, type, name);
     } else if (string_equals(from_name, context->current_module->name)) {
-        return ps_module_get_var(context->current_module, name);
+        return ps_module_get_op(context->current_module, type, name);
     } else {
-        return ps_context_get_imported_var1(context, from_name, name);
+        return ps_context_get_imported_op1(context, type, from_name, name);
     }
 }
 
