@@ -61,8 +61,10 @@ static inline string_t * string_concat3(string_t * a, string_t * b, string_t * c
 }
 
 static inline void string_free(string_t * s) {
-    free(s->value);
-    free(s);
+    if (s != NULL) {
+        free(s->value);
+        free(s);
+    }
 }
 
 #endif //EVO_STRING_H

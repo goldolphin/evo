@@ -10,6 +10,10 @@
 #include "ps_module.h"
 
 typedef struct {
+
+} ps_symbol_t;
+
+typedef struct {
     hashmap_t module_map; // name -> module
     list_t imported_modules;
     ps_module_t * current_module;

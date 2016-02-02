@@ -5,46 +5,35 @@
 
 #include <utils/string.h>
 #include "ps_module.h"
-#include "symbol_table.h"
 
 void ps_module_init(ps_module_t * module, string_t * name) {
     module->name = string_dup(name);
     symbol_table_init(&module->var_table, sizeof(var_def_t));
-    symbol_table_init(&module->prefix_table, sizeof(operator_def_t));
-    symbol_table_init(&module->postfix_table, sizeof(operator_def_t));
-    symbol_table_init(&module->binary_table, sizeof(operator_def_t));
-
-    symbol_table_init(&module->imported_var_table, sizeof(imported_var_def_t));
-    symbol_table_init(&module->imported_prefix_table, sizeof(imported_operator_def_t));
-    symbol_table_init(&module->imported_postfix_table, sizeof(imported_operator_def_t));
-    symbol_table_init(&module->imported_binary_table, sizeof(imported_operator_def_t));
+    for (int i = 0; i < OPERATOR_TYPE_NUM; ++i) {
+        symbol_table_init(&module->op_table[i], sizeof(operator_def_t));
+    }
 }
 
 void ps_module_destroy(ps_module_t * module) {
     string_free(module->name);
     symbol_table_destroy(&module->var_table);
-    symbol_table_destroy(&module->prefix_table);
-    symbol_table_destroy(&module->postfix_table);
-    symbol_table_destroy(&module->binary_table);
-
-    symbol_table_destroy(&module->imported_var_table);
-    symbol_table_destroy(&module->imported_prefix_table);
-    symbol_table_destroy(&module->imported_postfix_table);
-    symbol_table_destroy(&module->imported_binary_table);
+    for (int i = 0; i < OPERATOR_TYPE_NUM; ++i) {
+        symbol_table_destroy(&module->op_table[i]);
+    }
 }
 
 void ps_module_enter_scope(ps_module_t * module) {
     symbol_table_enter_scope(&module->var_table);
-    symbol_table_enter_scope(&module->prefix_table);
-    symbol_table_enter_scope(&module->postfix_table);
-    symbol_table_enter_scope(&module->binary_table);
+    for (int i = 0; i < OPERATOR_TYPE_NUM; ++i) {
+        symbol_table_enter_scope(&module->op_table[i]);
+    }
 }
 
 void ps_module_exit_scope(ps_module_t * module) {
     symbol_table_exit_scope(&module->var_table);
-    symbol_table_exit_scope(&module->prefix_table);
-    symbol_table_exit_scope(&module->postfix_table);
-    symbol_table_exit_scope(&module->binary_table);
+    for (int i = 0; i < OPERATOR_TYPE_NUM; ++i) {
+        symbol_table_exit_scope(&module->op_table[i]);
+    }
 }
 
 bool ps_module_add_var(ps_module_t * module, string_t * name) {
@@ -63,82 +52,58 @@ var_def_t * ps_module_get_exported_var(ps_module_t * module, string_t * name) {
     return container_of(info, var_def_t, super);
 }
 
-#define BUF(buf) SBUILDER(buf, 1024)
-#define BUF2STR(buf, str) string_t str; string_init(&str, buf.buf, sbuilder_len(&buf))
+var_def_t * ps_module_add_imported_var(ps_module_t * module, ps_module_t * from, var_def_t * var) {
+    symbol_info_t *info = symbol_table_add_imported_symbol(&module->var_table, from->name, var->super.name);
+    if (info == NULL) return NULL;
+    return container_of(info, var_def_t, super);
+}
 
-imported_var_def_t * ps_module_add_imported_var(ps_module_t * module, ps_module_t * from, var_def_t * var) {
-    BUF(buf);
-    sbuilder_string(&buf, from->name);
-    sbuilder_str(&buf, ".");
-    sbuilder_string(&buf, var->super.name);
-    BUF2STR(buf, full_name);
-    symbol_info_t *symbol_info = symbol_table_add_symbol(&module->var_table, &full_name);
+var_def_t * ps_module_get_imported_var(ps_module_t * module, string_t * from_name, string_t * name) {
+    symbol_info_t *symbol_info = symbol_table_get_imported_symbol(&module->var_table, from_name, name);
     if (symbol_info != NULL) {
-        imported_var_def_t *info = container_of(symbol_info, imported_var_def_t, super);
-        info->module = from;
-        info->var = var;
+        return container_of(symbol_info, var_def_t, super);
+    }
+    return NULL;
+}
+
+bool ps_module_add_op(ps_module_t * module, operator_type_t op_type, string_t * name, bool left2right, int precedence, var_def_t * var) {
+    symbol_info_t *symbol_info = symbol_table_add_symbol(&module->op_table[op_type], name);
+    if (symbol_info == NULL) return false;
+    operator_def_t * def = container_of(symbol_info, operator_def_t, super);
+    def->left2right = left2right;
+    def->precedence = precedence;
+    def->var = var;
+    return true;
+}
+
+operator_def_t * ps_module_get_op(ps_module_t * module, operator_type_t op_type, string_t * name) {
+    symbol_info_t * info = symbol_table_get_symbol(&module->op_table[op_type], name);
+    if (info == NULL) return NULL;
+    return container_of(info, operator_def_t, super);
+}
+
+operator_def_t * ps_module_get_exported_op(ps_module_t * module, operator_type_t op_type, string_t * name) {
+    symbol_info_t * info = symbol_table_get_exported_symbol(&module->op_table[op_type], name);
+    if (info == NULL) return NULL;
+    return container_of(info, operator_def_t, super);
+}
+
+operator_def_t * ps_module_add_imported_op(ps_module_t * module, operator_type_t op_type, ps_module_t * from, operator_def_t *op) {
+    symbol_info_t *symbol_info = symbol_table_add_imported_symbol(&module->op_table[op_type], from->name, op->super.name);
+    if (symbol_info != NULL) {
+        operator_def_t *info = container_of(symbol_info, operator_def_t, super);
+        info->left2right = op->left2right;
+        info->precedence = op->precedence;
+        info->var = op->var;
         return info;
     }
     return NULL;
 }
 
-imported_var_def_t * ps_module_get_imported_var(ps_module_t * module, string_t * from_name, string_t * name) {
-    BUF(buf);
-    sbuilder_string(&buf, from_name);
-    sbuilder_str(&buf, ".");
-    sbuilder_string(&buf, name);
-    BUF2STR(buf, full_name);
-    symbol_info_t *symbol_info = symbol_table_get_symbol(&module->var_table, &full_name);
+operator_def_t * ps_module_get_imported_op(ps_module_t * module, operator_type_t op_type, string_t * from_name, string_t * name) {
+    symbol_info_t *symbol_info = symbol_table_get_imported_symbol(&module->op_table[op_type], from_name, name);
     if (symbol_info != NULL) {
-        return container_of(symbol_info, imported_var_def_t, super);
+        return container_of(symbol_info, operator_def_t, super);
     }
     return NULL;
-}
-
-bool ps_module_add_prefix(ps_module_t * module, string_t * name) {
-    return symbol_table_add_symbol(&module->prefix_table, name) != NULL;
-}
-
-operator_def_t * ps_module_get_prefix(ps_module_t * module, string_t * name) {
-    symbol_info_t * info = symbol_table_get_symbol(&module->prefix_table, name);
-    if (info == NULL) return NULL;
-    return container_of(info, operator_def_t, super);
-}
-
-operator_def_t * ps_module_get_exported_prefix(ps_module_t * module, string_t * name) {
-    symbol_info_t * info = symbol_table_get_exported_symbol(&module->prefix_table, name);
-    if (info == NULL) return NULL;
-    return container_of(info, operator_def_t, super);
-}
-
-bool ps_module_add_postfix(ps_module_t * module, string_t * name) {
-    return symbol_table_add_symbol(&module->postfix_table, name) != NULL;
-}
-
-operator_def_t * ps_module_get_postfix(ps_module_t * module, string_t * name) {
-    symbol_info_t * info = symbol_table_get_symbol(&module->postfix_table, name);
-    if (info == NULL) return NULL;
-    return container_of(info, operator_def_t, super);
-}
-
-operator_def_t * ps_module_get_exported_postfix(ps_module_t * module, string_t * name) {
-    symbol_info_t * info = symbol_table_get_exported_symbol(&module->postfix_table, name);
-    if (info == NULL) return NULL;
-    return container_of(info, operator_def_t, super);
-}
-
-bool ps_module_add_binary(ps_module_t * module, string_t * name) {
-    return symbol_table_add_symbol(&module->binary_table, name) != NULL;
-}
-
-operator_def_t * ps_module_get_binary(ps_module_t * module, string_t * name) {
-    symbol_info_t * info = symbol_table_get_symbol(&module->binary_table, name);
-    if (info == NULL) return NULL;
-    return container_of(info, operator_def_t, super);
-}
-
-operator_def_t * ps_module_get_exported_binary(ps_module_t * module, string_t * name) {
-    symbol_info_t * info = symbol_table_get_exported_symbol(&module->binary_table, name);
-    if (info == NULL) return NULL;
-    return container_of(info, operator_def_t, super);
 }
