@@ -19,11 +19,29 @@ typedef struct {
 
 void string_init(string_t *str, char *value, size_t len);
 
+static inline size_t string_len(string_t * str) {
+    return str->len;
+}
+
 bool string_equals_s(string_t *str, char *value, size_t len);
 
 bool string_equals_c(string_t * str, const char * s);
 
 bool string_equals(string_t * str1, string_t * str2);
+
+static inline long string_to_long(string_t *str) {
+    char s[str->len + 1];
+    memcpy(s, str->value, (size_t) str->len);
+    s[str->len] = '\0';
+    return atol(s);
+}
+
+static inline double string_to_double(string_t *str) {
+    char s[str->len + 1];
+    memcpy(s, str->value, (size_t) str->len);
+    s[str->len] = '\0';
+    return atof(s);
+}
 
 bool sbuilder_string(sbuilder_t * builder, string_t * str);
 

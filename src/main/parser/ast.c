@@ -39,11 +39,14 @@ static bool sbuilder_var_declare_list(sbuilder_t * builder, ast_var_declare_list
     }
 }
 
-static void print_indent(int level, const char * str) {
+static void print_indent(int level, const char * format, ...) {
     for (int i = 0; i < level; ++i) {
         printf("  ");
     }
-    puts(str);
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
 }
 
 static void print_string(int level, string_t * str) {
@@ -167,6 +170,15 @@ static void print_let(int level, ast_let_t * let) {
     print_indent(level, "let");
     print_var_declare(level+1, let->var);
     print_statement(level+1, &let->expr->super);
+}
+
+static void print_define_op(int level, ast_define_op_t * define_op) {
+    print_indent(level, "define_op");
+    print_indent(level+1, operator_type_name(define_op->op_type));
+    print_string(level+1, define_op->op_name);
+    print_string(level+1, define_op->var_name);
+    print_indent(level+1, define_op->left2right ? "left" : "right");
+    print_indent(level+1, "%d", define_op->precedence);
 }
 
 static void print_str(int level, ast_str_t * str) {

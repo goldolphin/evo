@@ -34,8 +34,6 @@ add_executable(list src/test/c/list.c)
 add_executable(test-matcher src/test/utils/test_matcher.c)
 target_link_libraries(test-matcher utils)
 
-configure_file(src/test/evo/list.evo src/test/evo/list.evo)
-
 add_executable(test-lexer src/test/lexer/test_lexer.c)
 target_link_libraries(test-lexer lexer)
 
@@ -44,6 +42,9 @@ target_link_libraries(test-parser parser)
 
 add_executable(test-interpreter src/test/interpreter/test_interpreter.c)
 target_link_libraries(test-interpreter interpreter)
+
+configure_file(src/test/evo/prelude.evo src/test/evo/prelude.evo)
+configure_file(src/test/evo/list.evo src/test/evo/list.evo)
 
 enable_testing()
 add_test(NAME array COMMAND array)

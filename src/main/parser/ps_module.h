@@ -30,6 +30,8 @@ typedef enum {
     OPERATOR_TYPE_NUM,
 } operator_type_t;
 
+const char * operator_type_name(operator_type_t op_type);
+
 typedef struct {
     string_t * name;
     symbol_table_t var_table;

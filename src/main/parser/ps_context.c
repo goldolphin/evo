@@ -127,7 +127,7 @@ bool ps_context_add_var(ps_context_t * context, string_t * name) {
 }
 
 var_def_t * ps_context_get_var(ps_context_t * context, string_t * from_name, string_t * name) {
-    if (from_name == NULL) {
+    if (from_name == NULL || string_len(from_name) == 0) {
         var_def_t *def = ps_module_get_var(context->current_module, name);
         if (def != NULL) return def;
         return ps_context_get_imported_var0(context, name);
@@ -174,7 +174,7 @@ bool ps_context_add_op(ps_context_t * context, operator_type_t type, string_t * 
 }
 
 operator_def_t * ps_context_get_op(ps_context_t * context, operator_type_t type, string_t * from_name, string_t * name) {
-    if (from_name == NULL) {
+    if (from_name == NULL || string_len(from_name) == 0) {
         operator_def_t *def = ps_module_get_op(context->current_module, type, name);
         if (def != NULL) return def;
         return ps_context_get_imported_op0(context, type, name);

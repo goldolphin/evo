@@ -6,6 +6,21 @@
 #include <lexer/file_char_stream.h>
 #include <lexer/basic_char_stream.h>
 
+void load_prelude(parser_t * parser, ps_context_t * context) {
+    file_char_stream_t cs;
+    ensure(file_char_stream_init(&cs, "src/test/evo/prelude.evo", 4096));
+    lexer_t lexer;
+    lexer_init(&lexer);
+    token_stream_t ts;
+    token_stream_init(&ts, &lexer, &cs.super);
+    ps_context_add_module(context, STRING("prelude"));
+    while (true) {
+        ast_statement_t *statement = parser_parse(parser, context, &ts);
+        if (statement == NULL) break;
+        print_statement(0, statement);
+    }
+}
+
 void test_str(const char * str) {
     basic_char_stream_t cs;
     basic_char_stream_init(&cs, (uint8_t *) str, (int) strlen(str));
@@ -15,12 +30,13 @@ void test_str(const char * str) {
     token_stream_init(&ts, &lexer, &cs.super);
     parser_t parser;
     parser_init(&parser);
-    parser_context_t context;
-    parser_context_init(&context, 64);
-    // parser_context_add_module(&context, STRING("test"));
+    ps_context_t context;
+    ps_context_init(&context);
+    load_prelude(&parser, &context);
+    ps_context_add_module(&context, STRING("test"));
 
     while (true) {
-        ir_statement_t *statement = parser_parse(&parser, &context, &ts);
+        ast_statement_t *statement = parser_parse(&parser, &context, &ts);
         if (statement == NULL) break;
         print_statement(0, statement);
     }
@@ -28,19 +44,20 @@ void test_str(const char * str) {
 
 void test_file(const char * filename) {
     file_char_stream_t cs;
-    file_char_stream_init(&cs, filename, 4096);
+    ensure(file_char_stream_init(&cs, filename, 4096));
     lexer_t lexer;
     lexer_init(&lexer);
     token_stream_t ts;
     token_stream_init(&ts, &lexer, &cs.super);
     parser_t parser;
     parser_init(&parser);
-    parser_context_t context;
-    parser_context_init(&context, 64);
-    // parser_context_add_module(&context, STRING("test"));
+    ps_context_t context;
+    ps_context_init(&context);
+    load_prelude(&parser, &context);
+    ps_context_add_module(&context, STRING("test"));
 
     while (true) {
-        ir_statement_t *statement = parser_parse(&parser, &context, &ts);
+        ast_statement_t *statement = parser_parse(&parser, &context, &ts);
         if (statement == NULL) break;
         print_statement(0, statement);
     }

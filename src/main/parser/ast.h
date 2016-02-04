@@ -110,6 +110,14 @@ DEFINE_STATEMENT(ast_let_t,
     ast_expr_t * expr;
 )
 
+DEFINE_STATEMENT(ast_define_op_t,
+    operator_type_t op_type;
+    string_t * op_name;
+    string_t * var_name;
+    bool left2right;
+    int precedence;
+)
+
 DEFINE_EXPR(ast_str_t,
     string_t * value;
 )

@@ -1,6 +1,7 @@
 AST_DEF(AST_IMPORT,             ast_import_t,             STATEMENT,   import)
 AST_DEF(AST_STRUCT,             ast_struct_t,             STATEMENT,   struct)
 AST_DEF(AST_LET,                ast_let_t,                STATEMENT,   let)
+AST_DEF(AST_DEFINE_OP,          ast_define_op_t,          STATEMENT,   define_op)
 
 AST_DEF(AST_FUN,                ast_fun_t,                EXPR,        fun)
 AST_DEF(AST_BLOCK,              ast_block_t,              EXPR,        block)

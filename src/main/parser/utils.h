@@ -11,7 +11,7 @@
 #include <utils/string.h>
 #include "token_stream.h"
 
-static inline void parser_error(const char * func_name, const char * message, token_stream_t * stream) {
+static inline void parser_error(const char * func_name, token_stream_t * stream, const char * message) {
     if (stream == NULL) {
         fprintf(stderr, "[PARSER ERROR] %s: %s\n", func_name, message);
     } else {
@@ -20,9 +20,14 @@ static inline void parser_error(const char * func_name, const char * message, to
     }
 }
 
-static inline void parser_require(const char * func_name, bool condition, const char * message, token_stream_t * stream) {
+static inline void parser_require(const char * func_name, bool condition, token_stream_t * stream, const char * format, ...) {
     if (!condition) {
-        parser_error(func_name, message, stream);
+        char buf[2048];
+        va_list args;
+        va_start(args, format);
+        vsnprintf(buf, sizeof(buf), format, args);
+        va_end(args);
+        parser_error(func_name, stream, buf);
         ensure(false);
     }
 }
@@ -32,7 +37,7 @@ static inline void parser_require_token(const char * func_name, token_t * token,
         SBUILDER(builder, 1024);
         sbuilder_format(&builder, "Need token `%s`, but given ", token_type_value(type));
         sbuilder_token(&builder, token);
-        parser_require(func_name, false, builder.buf, stream);
+        parser_require(func_name, false, stream, builder.buf);
     }
 }
 
@@ -41,11 +46,11 @@ static inline void parser_require_id(const char * func_name, token_t * token, co
         SBUILDER(builder, 1024);
         sbuilder_format(&builder, "Need id %s, but given ", value);
         sbuilder_token(&builder, token);
-        parser_require(func_name, false, builder.buf, stream);
+        parser_require(func_name, false, stream, builder.buf);
     }
 }
 
-#define require(condition, message, stream) parser_require(__FUNCTION__, condition, message, stream)
+#define require(condition, stream, format, args...) parser_require(__FUNCTION__, condition, stream, format, ##args)
 
 #define require_token(token, type, stream) parser_require_token(__FUNCTION__, token, type, stream)
 

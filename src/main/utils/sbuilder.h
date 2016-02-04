@@ -29,7 +29,7 @@ static inline void sbuilder_reset(sbuilder_t * builder) {
     builder->buf[0] = '\0';
 }
 
-bool sbuilder_format(sbuilder_t * builder, const char *message, ...);
+bool sbuilder_format(sbuilder_t * builder, const char *format, ...);
 
 bool sbuilder_char(sbuilder_t * builder, char c);
 

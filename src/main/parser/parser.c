@@ -77,6 +77,16 @@ ast_let_t * make_let(ast_var_declare_t * var, ast_expr_t * expr) {
     return let;
 }
 
+ast_define_op_t * make_define_op(operator_type_t op_type, string_t * op_name, string_t * var_name, bool left2right, int precedence) {
+    ast_define_op_t * define_op = new_data(ast_define_op_t);
+    define_op->super.category = AST_DEFINE_OP;
+    define_op->op_type = op_type;
+    define_op->op_name = op_name;
+    define_op->var_name = var_name;
+    define_op->left2right = left2right;
+    define_op->precedence = precedence;
+    return define_op;
+}
 // Expr
 void expr_init(ast_expr_t * expr, ast_category_t category) {
     expr->super.category = category;
@@ -174,6 +184,17 @@ ast_struct_ref_t * make_struct_ref(ast_expr_t * base, int index, string_t * name
 #define BUF(builder) SBUILDER(builder, 1024)
 #define BUF2STR(builder, str) string_t str; string_init(&str, builder.buf, sbuilder_len(&builder))
 
+void ignore_linebreak(token_stream_t * stream) {
+    while (true) {
+        token_t *token = token_stream_peek(stream);
+        if (token->type != TOKEN_LINEBREAK) {
+            break;
+        } else {
+            token_stream_poll(stream);
+        }
+    }
+}
+
 ast_id_t * parse_id(token_stream_t * stream) {
     token_t *token = token_stream_peek(stream);
     if (token->type != TOKEN_ID) {
@@ -214,12 +235,12 @@ ast_id_t * parse_cid(token_stream_t * stream) {
     return NULL;
 }
 
-ast_expr_t * parse_expr(token_stream_t * stream);
+ast_expr_t * parse_expr(ps_context_t * context, token_stream_t * stream);
 
 ast_import_t * parse_import(token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_IMPORT, stream);
     ast_id_t *name = parse_cid(stream);
-    require(name != NULL, "Need cid!", stream);
+    require(name != NULL, stream, "Need cid!");
     return make_import(name);
 }
 
@@ -231,7 +252,7 @@ ast_var_declare_t * parse_var_declare(token_stream_t * stream) {
     if (token_stream_peek(stream)->type == TOKEN_COLON) {
         token_stream_poll(stream);
         type = parse_cid(stream);
-        require(type != NULL, "Need cid!", stream);
+        require(type != NULL, stream, "Need cid!");
     }
     return make_var_declare(name, type);
 }
@@ -258,18 +279,68 @@ ast_struct_t * parse_struct(token_stream_t * stream) {
     return make_struct(members);
 }
 
-ast_let_t * parse_let(token_stream_t * stream) {
+ast_let_t * parse_let(ps_context_t * context, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_LET, stream);
     ast_var_declare_t * var = parse_var_declare(stream);
-    require(var != NULL, "Need variable", stream);
+    require(var != NULL, stream, "Need variable");
     require_id(token_stream_poll(stream), "=", stream);
-    ast_expr_t * expr = parse_expr(stream);
-    require(expr != NULL, "Need expr", stream);
+    ast_expr_t * expr = parse_expr(context, stream);
+    require(expr != NULL, stream, "Need expr");
     return make_let(var, expr);
 }
 
+ast_define_op_t * parse_define_op(ps_context_t * context, token_stream_t * stream) {
+    require_token(token_stream_poll(stream), TOKEN_OPERATOR, stream);
+    require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
 
-ast_statement_t * parse_statement(token_stream_t * stream) {
+    bool left2right;
+    token_t *token = token_stream_poll(stream);
+    operator_type_t op_type;
+    if (string_equals(STRING("prefix"), &token->value)) {
+        op_type = OPERATOR_TYPE_PREFIX;
+        left2right = true;
+    } else if (string_equals(STRING("postfix"), &token->value)) {
+        op_type = OPERATOR_TYPE_POSTFIX;
+        left2right = false;
+    } else if (string_equals(STRING("binary"), &token->value)) {
+        op_type = OPERATOR_TYPE_BINARY;
+    } else {
+        require(false, stream, "Need prefix|postfix|binary");
+    }
+    require_token(token_stream_poll(stream), TOKEN_COMMA, stream);
+
+    token = token_stream_poll(stream);
+    require_token(token, TOKEN_ID, stream);
+    string_t * op_name = string_dup(&token->value);
+    require_token(token_stream_poll(stream), TOKEN_COMMA, stream);
+
+    token = token_stream_poll(stream);
+    require_token(token, TOKEN_ID, stream);
+    string_t * var_name = string_dup(&token->value);
+    require_token(token_stream_poll(stream), TOKEN_COMMA, stream);
+
+    if (op_type == OPERATOR_TYPE_BINARY) {
+        token = token_stream_poll(stream);
+        if (string_equals(STRING("left"), &token->value)) {
+            left2right = true;
+        } else if (string_equals(STRING("left"), &token->value)) {
+            left2right = false;
+        } else {
+            require(false, stream, "Need left|right");
+        }
+        require_token(token_stream_poll(stream), TOKEN_COMMA, stream);
+    }
+
+    token = token_stream_poll(stream);
+    require_token(token, TOKEN_LONG, stream);
+    int precedence = (int) string_to_long(&token->value);
+
+    require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
+    ps_context_add_op(context, op_type, op_name, left2right, precedence, NULL);
+    return make_define_op(op_type, op_name, var_name, left2right, precedence);
+}
+
+ast_statement_t * parse_statement(ps_context_t * context, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
     if (token->type == TOKEN_END) {
         return NULL;
@@ -282,44 +353,48 @@ ast_statement_t * parse_statement(token_stream_t * stream) {
         case TOKEN_STRUCT:
             return &parse_struct(stream)->super;
         case TOKEN_LET:
-            return &parse_let(stream)->super;
+            return &parse_let(context, stream)->super;
+        case TOKEN_OPERATOR:
+            return &parse_define_op(context, stream)->super;
         default:
             break;
     }
-    ast_expr_t * expr = parse_expr(stream);
+    ast_expr_t * expr = parse_expr(context, stream);
     if (expr == NULL) return NULL;
     return &expr->super;
 }
 
-static bool parse_block_rec(token_stream_t * stream, ast_statement_list_t ** p_statements, ast_expr_t ** p_the_last) {
-    ast_statement_t * statement = parse_statement(stream);
+static bool parse_block_rec(ps_context_t * context, token_stream_t * stream, ast_statement_list_t ** p_statements, ast_expr_t ** p_the_last) {
+    ast_statement_t * statement = parse_statement(context, stream);
     if (statement == NULL) {
         return false;
     }
     ast_statement_list_t * statements;
     ast_expr_t * the_last;
-    if (parse_block_rec(stream, &statements, &the_last)) {
+    if (parse_block_rec(context, stream, &statements, &the_last)) {
         *p_statements = make_statement_list(statement, statements);
         *p_the_last = the_last;
         return true;
     } else {
-        require(ast_is_expr(statement->category), "Need expr", stream);
+        require(ast_is_expr(statement->category), stream, "Need expr");
         *p_statements = NULL;
         *p_the_last = container_of(statement, ast_expr_t, super);
         return true;
     }
 }
 
-ast_block_t * parse_block(token_stream_t * stream) {
+ast_block_t * parse_block(ps_context_t * context, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
+    ps_context_enter_scope(context);
     ast_statement_list_t * statements;
     ast_expr_t * the_last;
-    require(parse_block_rec(stream, &statements, &the_last), "Need block", stream);
+    require(parse_block_rec(context, stream, &statements, &the_last), stream, "Need block");
     require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
+    ps_context_exit_scope(context);
     return make_block(statements, the_last);
 }
 
-ast_fun_t * parse_fun(token_stream_t * stream) {
+ast_fun_t * parse_fun(ps_context_t * context, token_stream_t * stream) {
     require_token(token_stream_poll(stream), TOKEN_FUN, stream);
 
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
@@ -330,11 +405,20 @@ ast_fun_t * parse_fun(token_stream_t * stream) {
     if (token_stream_peek(stream)->type == TOKEN_COLON) {
         token_stream_poll(stream);
         return_type = parse_cid(stream);
-        require(return_type != NULL, "Need cid", stream);
+        require(return_type != NULL, stream, "Need cid");
     }
 
-    ast_expr_t * body = parse_expr(stream);
-    require(body != NULL, "Need body", stream);
+    token_t *token = token_stream_peek(stream);
+    ast_expr_t * body = NULL;
+    if (token->type == TOKEN_LPAREN) {
+        body = &parse_block(context, stream)->super;
+    } else {
+        ps_context_enter_scope(context);
+        body = parse_expr(context, stream);
+        ps_context_exit_scope(context);
+    }
+
+    require(body != NULL, stream, "Need body");
     return make_fun(params, return_type, body);
 }
 
@@ -353,10 +437,7 @@ ast_double_t * parse_double(token_stream_t * stream) {
         return NULL;
     }
     token_stream_poll(stream);
-    char str[token->value.len+1];
-    memcpy(str, token->value.value, (size_t) token->value.len);
-    str[token->value.len] = '\0';
-    return make_double(atof(str));
+    return make_double(string_to_double(&token->value));
 }
 
 ast_long_t * parse_long(token_stream_t * stream) {
@@ -365,28 +446,25 @@ ast_long_t * parse_long(token_stream_t * stream) {
         return NULL;
     }
     token_stream_poll(stream);
-    char str[token->value.len+1];
-    memcpy(str, token->value.value, (size_t) token->value.len);
-    str[token->value.len] = '\0';
-    return make_long(atol(str));
+    return make_long(string_to_long(&token->value));
 }
 
-ast_expr_list_t * parse_expr_list(token_stream_t * stream) {
-    ast_expr_t * expr = parse_expr(stream);
+ast_expr_list_t * parse_expr_list(ps_context_t * context, token_stream_t * stream) {
+    ast_expr_t * expr = parse_expr(context, stream);
     if (expr == NULL) return NULL;
     token_t * token = token_stream_peek(stream);
     if (token->type == TOKEN_COMMA) {
         token_stream_poll(stream);
-        return make_expr_list(expr, parse_expr_list(stream));
+        return make_expr_list(expr, parse_expr_list(context, stream));
     } else {
         return make_expr_list(expr, NULL);
     }
 }
 
-ast_fun_apply_t * parse_fun_apply(ast_expr_t * function, token_stream_t * stream) {
-    require(function != NULL, "Need function", stream);
+ast_fun_apply_t * parse_fun_apply(ps_context_t * context, ast_expr_t * function, token_stream_t * stream) {
+    require(function != NULL, stream, "Need function");
     require_token(token_stream_poll(stream), TOKEN_LPAREN, stream);
-    ast_expr_list_t * operands = parse_expr_list(stream);
+    ast_expr_list_t * operands = parse_expr_list(context, stream);
     require_token(token_stream_poll(stream), TOKEN_RPAREN, stream);
     return make_fun_apply(function, operands);
 }
@@ -395,17 +473,17 @@ ast_ref_t * parse_ref(ps_context_t * context, token_stream_t * stream) {
     BUF(prefix_buf);
     BUF(base_buf);
     parse_cid0(stream, &prefix_buf, &base_buf);
-    require(sbuilder_len(&base_buf) > 0, "Need cid", stream);
+    require(sbuilder_len(&base_buf) > 0, stream, "Need cid");
 
     BUF2STR(base_buf, base);
     if (sbuilder_len(&prefix_buf) > 0) {
         BUF2STR(prefix_buf, prefix);
         var_def_t *var = ps_context_get_var(context, &prefix, &base);
-        require(var != NULL, "Need var", stream);
+        require(var != NULL, stream, "Need var");
         return make_ref(var);
     }
     var_def_t *var = ps_context_get_var(context, NULL, &base);
-    require(var != NULL, "Need var", stream);
+    require(var != NULL, stream, "Need var");
     return make_ref(var);
 }
 
@@ -424,9 +502,9 @@ ast_expr_t * parse_term(ps_context_t * context, token_stream_t * stream) {
     token_t * token = token_stream_peek(stream);
     switch (token->type) {
         case TOKEN_FUN:
-            return &parse_fun(stream)->super;
+            return &parse_fun(context, stream)->super;
         case TOKEN_LPAREN:
-            return &parse_block(stream)->super;
+            return &parse_block(context, stream)->super;
         case TOKEN_STRING:
             return &parse_str(stream)->super;
         case TOKEN_DOUBLE:
@@ -450,7 +528,7 @@ ast_expr_t * parse_primary(ps_context_t * context, token_stream_t * stream) {
             token_t * token = token_stream_peek(stream);
             switch (token->type) {
                 case TOKEN_LPAREN:
-                    new_left = &parse_fun_apply(left, stream)->super;
+                    new_left = &parse_fun_apply(context, left, stream)->super;
                     break;
                 case TOKEN_PERIOD:
                     new_left = &parse_struct_ref(left, stream)->super;
@@ -473,32 +551,20 @@ typedef struct {
 } frame_t;
 
 static inline operator_def_t * parse_operator_def(ps_context_t * context, operator_type_t op_type, token_stream_t * stream) {
-    BUF(prefix_buf);
-    BUF(base_buf);
-    parse_cid0(stream, &prefix_buf, &base_buf);
-    require(sbuilder_len(&base_buf) > 0, "Need cid", stream);
-
-    BUF2STR(base_buf, base);
-    if (sbuilder_len(&prefix_buf) > 0) {
-        BUF2STR(prefix_buf, prefix);
-        var_def_t *var = ps_context_get_var(context, &prefix, &base);
-        require(var != NULL, "Need var", stream);
-        return make_ref(var);
-    }
-    var_def_t *var = ps_context_get_var(context, NULL, &base);
-    require(var != NULL, "Need var", stream);
-    return make_ref(var);
-
-    token_t * token = token_stream_peek(stream);
+    token_t *token = token_stream_peek(stream);
     if (token->type != TOKEN_ID) {
         return NULL;
     }
-    operator_def_t * def = ps_context_get_op(context, op_type, NULL, &token->value);
-    if (def != NULL) {
-        token_stream_poll(stream);
-        return def;
-    }
-    return NULL;
+
+    BUF(prefix_buf);
+    BUF(base_buf);
+    parse_cid0(stream, &prefix_buf, &base_buf);
+    BUF2STR(prefix_buf, prefix);
+    BUF2STR(base_buf, base);
+
+    operator_def_t *def = ps_context_get_op(context, op_type, &prefix, &base);
+    require(def != NULL, stream, "Need operator type=%s", operator_type_name(op_type));
+    return def;
 }
 
 static inline bool operator_le(operator_def_t *left, operator_def_t *right) {
@@ -508,31 +574,38 @@ static inline bool operator_le(operator_def_t *left, operator_def_t *right) {
     return left->left2right;
 }
 
-static inline ast_expr_t * build_unary_apply(operator_def_t * op, ast_expr_t * operand) {
+static inline ast_expr_t * build_prefix_apply(operator_def_t * op, ast_expr_t * operand) {
     if (op == NULL) {
         return operand;
     } else {
-        return &make_fun_apply(&make_ref(op->var)->super, make_expr_list(operand, NULL))->super;
+        return &make_prefix(op, operand)->super;
     }
 }
 
-static frame_t parse_unary_rec(token_stream_t *stream, operator_def_t * last_prefix) {
+static inline ast_expr_t * build_postfix_apply(operator_def_t * op, ast_expr_t * operand) {
+    if (op == NULL) {
+        return operand;
+    } else {
+        return &make_postfix(op, operand)->super;
+    }
+}
+
+static frame_t parse_unary_rec(ps_context_t * context, token_stream_t *stream, operator_def_t * last_prefix) {
     ast_expr_t *left;
     operator_def_t *postfix;
-    module_t *current_module = parser_context_current_module(context);
-    operator_def_t *prefix = parse_operator_def(&current_module->prefix_table, stream);
+    operator_def_t *prefix = parse_operator_def(context, OPERATOR_TYPE_PREFIX, stream);
     if (prefix == NULL) {
-        left = parse_primary(stream);
+        left = parse_primary(context, stream);
         if (left == NULL) {
-            require(last_prefix == NULL, "Need expr", stream);
+            require(last_prefix == NULL, stream, "Need expr");
             frame_t current;
             current.left = NULL;
             current.op = NULL;
             return current;
         }
-        postfix = parse_operator_def(&current_module->postfix_table, stream);
+        postfix = parse_operator_def(context, OPERATOR_TYPE_POSTFIX, stream);
     } else {
-        frame_t current = parse_unary_rec(stream, prefix);
+        frame_t current = parse_unary_rec(context, stream, prefix);
         left = current.left;
         postfix = current.op;
     }
@@ -540,18 +613,18 @@ static frame_t parse_unary_rec(token_stream_t *stream, operator_def_t * last_pre
     while (true) {
         if (postfix == NULL || (last_prefix != NULL && operator_le(last_prefix, postfix))) {
             frame_t current;
-            current.left = build_unary_apply(last_prefix, left);
+            current.left = build_prefix_apply(last_prefix, left);
             current.op = postfix;
             return current;
         } else {
-            left = build_unary_apply(postfix, left);
-            postfix = parse_operator_def(&current_module->postfix_table, stream);
+            left = build_postfix_apply(postfix, left);
+            postfix = parse_operator_def(context, OPERATOR_TYPE_POSTFIX, stream);
         }
     }
 }
 
-static inline ast_expr_t * parse_unary(token_stream_t *stream) {
-    frame_t ret = parse_unary_rec(stream, NULL);
+static inline ast_expr_t * parse_unary(ps_context_t * context, token_stream_t *stream) {
+    frame_t ret = parse_unary_rec(context, stream, NULL);
     return ret.left;
 }
 
@@ -560,21 +633,20 @@ static inline ast_expr_t * build_binary_apply(operator_def_t * op, ast_expr_t * 
         ensure(left == NULL);
         return right;
     } else {
-        return &make_fun_apply(&make_ref(op->var)->super,
-                               make_expr_list(left, make_expr_list(right, NULL)))->super;
+        return &make_binary(op, left, right)->super;
     }
 }
 
-static frame_t parse_binary_rec(token_stream_t *stream, ast_expr_t * last_left, operator_def_t * last_op) {
-    ast_expr_t * left = parse_unary(stream);
+static frame_t parse_binary_rec(ps_context_t * context, token_stream_t *stream, ast_expr_t * last_left, operator_def_t * last_op) {
+    ast_expr_t * left = parse_unary(context, stream);
     if (left == NULL) {
-        require(last_op == NULL, "Need expr", stream);
+        require(last_op == NULL, stream, "Need expr");
         frame_t current;
         current.left = NULL;
         current.op = NULL;
         return current;
     }
-    operator_def_t * op = parse_operator_def(&parser_context_current_module(context)->binary_table, stream);
+    operator_def_t * op = parse_operator_def(context, OPERATOR_TYPE_BINARY, stream);
 
     while (true) {
         if (op == NULL || (last_op != NULL && operator_le(last_op, op))) {
@@ -583,22 +655,22 @@ static frame_t parse_binary_rec(token_stream_t *stream, ast_expr_t * last_left, 
             current.op = op;
             return current;
         } else {
-            frame_t current = parse_binary_rec(stream, left, op);
+            frame_t current = parse_binary_rec(context, stream, left, op);
             left = current.left;
             op = current.op;
         }
     }
 }
 
-static inline ast_expr_t * parse_binary(token_stream_t *stream) {
-    frame_t ret = parse_binary_rec(stream, NULL, NULL);
+static inline ast_expr_t * parse_binary(ps_context_t * context, token_stream_t *stream) {
+    frame_t ret = parse_binary_rec(context, stream, NULL, NULL);
     return ret.left;
 }
 
-ast_expr_t * parse_expr(token_stream_t * stream) {
-    return parse_binary(stream);
+ast_expr_t * parse_expr(ps_context_t * context, token_stream_t * stream) {
+    return parse_binary(context, stream);
 }
 
-ast_statement_t * parser_parse(parser_t * parser, token_stream_t * stream) {
-    return parse_statement(stream);
+ast_statement_t * parser_parse(parser_t * parser, ps_context_t * context, token_stream_t * stream) {
+    return parse_statement(context, stream);
 }

@@ -15,6 +15,19 @@ bool sbuilder_operator_def(sbuilder_t * builder, operator_def_t * def) {
     return sbuilder_format(builder, ", %s, %d", def->left2right ? "left" : "right", def->precedence);
 }
 
+const char * operator_type_name(operator_type_t op_type) {
+    switch (op_type) {
+        case OPERATOR_TYPE_PREFIX:
+            return "op_prefix";
+        case OPERATOR_TYPE_POSTFIX:
+            return "op_postfix";
+        case OPERATOR_TYPE_BINARY:
+            return "op_binary";
+        default:
+            ensure(false);
+    }
+}
+
 void ps_module_init(ps_module_t * module, string_t * name) {
     module->name = string_dup(name);
     symbol_table_init(&module->var_table, sizeof(var_def_t));

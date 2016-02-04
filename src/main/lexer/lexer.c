@@ -19,6 +19,7 @@ static token_type_t keywords[] = {
         TOKEN_STRUCT,
         TOKEN_EXTENDS,
         TOKEN_FUN,
+        TOKEN_OPERATOR,
 };
 
 static token_type_t punctuations[] = {
@@ -33,7 +34,7 @@ static token_type_t punctuations[] = {
         TOKEN_LBRACE,
         TOKEN_RBRACE,
         TOKEN_GRAVE,
-//        TOKEN_LINEBREAK,
+        TOKEN_LINEBREAK,
 };
 
 static inline void buffer_reset(lexer_context_t * context) {
