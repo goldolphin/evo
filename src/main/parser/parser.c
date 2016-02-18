@@ -210,13 +210,17 @@ void parse_cid0(token_stream_t * stream, sbuilder_t * prefix_buf, sbuilder_t * b
         if (token->type != TOKEN_ID) {
             break;
         }
-        if (sbuilder_len(base_buf) > 0) {
+        sbuilder_string(base_buf, &token->value);
+        token_stream_poll(stream);
+
+        if (token_stream_peek(stream)->type == TOKEN_PERIOD) {
             if (sbuilder_len(prefix_buf) > 0) sbuilder_str(prefix_buf, ".");
             sbuilder_str(prefix_buf, base_buf->buf);
             sbuilder_reset(base_buf);
+            token_stream_poll(stream);
+        } else {
+            break;
         }
-        sbuilder_string(base_buf, &token->value);
-        token_stream_poll(stream);
     }
 }
 
@@ -341,6 +345,7 @@ ast_define_op_t * parse_define_op(ps_context_t * context, token_stream_t * strea
 }
 
 ast_statement_t * parse_statement(ps_context_t * context, token_stream_t * stream) {
+    ignore_linebreak(stream);
     token_t * token = token_stream_peek(stream);
     if (token->type == TOKEN_END) {
         return NULL;
@@ -563,7 +568,7 @@ static inline operator_def_t * parse_operator_def(ps_context_t * context, operat
     BUF2STR(base_buf, base);
 
     operator_def_t *def = ps_context_get_op(context, op_type, &prefix, &base);
-    require(def != NULL, stream, "Need operator type=%s", operator_type_name(op_type));
+    require(def != NULL, stream, "Need operator type=%s, name=%s, from=%s", operator_type_name(op_type), base_buf.buf, prefix_buf.buf);
     return def;
 }
 
@@ -672,5 +677,8 @@ ast_expr_t * parse_expr(ps_context_t * context, token_stream_t * stream) {
 }
 
 ast_statement_t * parser_parse(parser_t * parser, ps_context_t * context, token_stream_t * stream) {
-    return parse_statement(context, stream);
+    ast_statement_t * statement = parse_statement(context, stream);
+    token_t * token = token_stream_peek(stream);
+    require(token->type == TOKEN_END || token->type == TOKEN_LINEBREAK, stream, "Need linebreak or file end");
+    return statement;
 }

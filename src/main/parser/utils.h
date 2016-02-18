@@ -28,7 +28,7 @@ static inline void parser_require(const char * func_name, bool condition, token_
         vsnprintf(buf, sizeof(buf), format, args);
         va_end(args);
         parser_error(func_name, stream, buf);
-        ensure(false);
+        abort();
     }
 }
 

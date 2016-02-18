@@ -53,7 +53,7 @@ void lexer_init(lexer_t * lexer) {
         token_t * token = new_data(token_t);
         const char * value = token_type_value(keywords[i]);
         token_init(token, keywords[i], (char *) value, (int) strlen(value));
-        matcher_pattern_init(&lexer->keywords[i], (uint8_t *) token->value.value, token->value.len, token);
+        matcher_pattern_init(&lexer->keywords[i], (uint8_t *) token->value.value, (int) token->value.len, token);
     }
     matcher_init(&lexer->keyword_matcher, lexer->keywords, keyword_num);
 

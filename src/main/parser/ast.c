@@ -47,13 +47,14 @@ static void print_indent(int level, const char * format, ...) {
     va_start(args, format);
     vprintf(format, args);
     va_end(args);
+    printf("\n");
 }
 
-static void print_string(int level, string_t * str) {
-    SBUILDER(builder, 1024);
-    sbuilder_string(&builder, str);
-    print_indent(level, builder.buf);
-}
+//static void print_string(int level, string_t * str) {
+//    SBUILDER(builder, 1024);
+//    sbuilder_string(&builder, str);
+//    print_indent(level, builder.buf);
+//}
 
 static void print_id(int level, ast_id_t * id) {
     SBUILDER(builder, 1024);
@@ -173,12 +174,19 @@ static void print_let(int level, ast_let_t * let) {
 }
 
 static void print_define_op(int level, ast_define_op_t * define_op) {
-    print_indent(level, "define_op");
-    print_indent(level+1, operator_type_name(define_op->op_type));
-    print_string(level+1, define_op->op_name);
-    print_string(level+1, define_op->var_name);
-    print_indent(level+1, define_op->left2right ? "left" : "right");
-    print_indent(level+1, "%d", define_op->precedence);
+    SBUILDER(builder, 1024);
+    sbuilder_str(&builder, "operator(");
+    sbuilder_str(&builder, operator_type_name(define_op->op_type));
+    sbuilder_str(&builder, ", ");
+    sbuilder_string(&builder, define_op->op_name);
+    sbuilder_str(&builder, ", ");
+    sbuilder_string(&builder, define_op->var_name);
+    sbuilder_str(&builder, ", ");
+    sbuilder_str(&builder, define_op->left2right ? "left" : "right");
+    sbuilder_str(&builder, ", ");
+    sbuilder_format(&builder, "%d", define_op->precedence);
+    sbuilder_str(&builder, ")");
+    print_indent(level, builder.buf);
 }
 
 static void print_str(int level, ast_str_t * str) {

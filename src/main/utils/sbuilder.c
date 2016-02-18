@@ -8,7 +8,7 @@
 void sbuilder_init(sbuilder_t * builder, char * buf, size_t capacity) {
     builder->buf = buf;
     builder->capacity = capacity;
-    builder->len = 0;
+    sbuilder_reset(builder);
 }
 
 bool sbuilder_format(sbuilder_t * builder, const char *format, ...) {
